@@ -1,0 +1,424 @@
+import { useEffect, useReducer, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getPublicConfig, getAvailableSlots, createTurn } from '../api/public';
+
+// ── State machine ─────────────────────────────────────────────────────────────
+
+const STEPS = { DATE: 'DATE', SLOT: 'SLOT', FORM: 'FORM', DONE: 'DONE' };
+
+const initial = {
+  step: STEPS.DATE,
+  name: '',
+  email: '',
+  workingDays: [],
+  selectedDate: null,
+  availableSlots: [],
+  slotsLoading: false,
+  selectedSlot: null,
+  turn: null,
+  loading: true,
+  error: '',
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'SET_FIELD':
+      return { ...state, [action.field]: action.value };
+    case 'SET_CONFIG':
+      return { ...state, workingDays: action.payload, loading: false };
+    case 'SELECT_DATE':
+      return { ...state, selectedDate: action.payload, availableSlots: [], selectedSlot: null, slotsLoading: true, error: '' };
+    case 'SET_SLOTS':
+      return { ...state, availableSlots: action.payload, slotsLoading: false, step: STEPS.SLOT, error: '' };
+    case 'SELECT_SLOT':
+      return { ...state, selectedSlot: action.payload };
+    case 'NEXT_FORM':
+      return { ...state, step: STEPS.FORM, error: '' };
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, loading: false, slotsLoading: false };
+    case 'DONE':
+      return { ...state, turn: action.payload, step: STEPS.DONE, loading: false };
+    case 'BACK_TO_DATE':
+      return { ...state, step: STEPS.DATE, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
+    case 'BACK_TO_SLOT':
+      return { ...state, step: STEPS.SLOT, error: '' };
+    default:
+      return state;
+  }
+}
+
+// ── Calendar helpers ──────────────────────────────────────────────────────────
+
+const DAY_HEADERS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+function buildGrid(year, month) {
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const offset = (first.getDay() + 6) % 7; // Monday = 0
+  const cells = Array(offset).fill(null);
+  for (let d = 1; d <= last.getDate(); d++) cells.push(new Date(year, month, d));
+  return cells;
+}
+
+function dateLabel(dateStr) {
+  const [y, m, d] = dateStr.split('-').map((v, i) => (i === 1 ? v - 1 : +v));
+  return new Date(y, m, d).toLocaleDateString('es-AR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+// ── Step: Calendar ────────────────────────────────────────────────────────────
+
+function CalendarStep({ workingDays, selectedDate, onSelect, onBack }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  const [vy, setVy] = useState(today.getFullYear());
+  const [vm, setVm] = useState(today.getMonth());
+
+  const isCurrentMonth = vy === today.getFullYear() && vm === today.getMonth();
+
+  const go = (delta) => {
+    let m = vm + delta, y = vy;
+    if (m > 11) { m = 0; y++; }
+    if (m < 0)  { m = 11; y--; }
+    setVm(m); setVy(y);
+  };
+
+  const monthLabel = new Date(vy, vm, 1)
+    .toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+
+  const cells = buildGrid(vy, vm);
+
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver al inicio
+      </button>
+      <h2 className="mb-1 text-xl font-bold text-gray-800">Elegí una fecha</h2>
+      <p className="mb-5 text-sm text-gray-500">Los días grises no están habilitados.</p>
+
+      {/* Month navigation */}
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          onClick={() => go(-1)}
+          disabled={isCurrentMonth}
+          className="rounded-xl p-2 text-xl text-gray-500 hover:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-200"
+        >
+          ‹
+        </button>
+        <span className="text-base font-semibold capitalize text-gray-800">{monthLabel}</span>
+        <button
+          onClick={() => go(1)}
+          className="rounded-xl p-2 text-xl text-gray-500 hover:bg-gray-100"
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="mb-1 grid grid-cols-7">
+        {DAY_HEADERS.map((h) => (
+          <div key={h} className="py-1 text-center text-xs font-semibold text-gray-400">{h}</div>
+        ))}
+      </div>
+
+      {/* Day grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (!day) return <div key={`e-${i}`} />;
+
+          const dateStr = day.toLocaleDateString('sv-SE');
+          const isPast = day < tomorrow;
+          const isNonWorking = !workingDays.includes(day.getDay());
+          const disabled = isPast || isNonWorking;
+          const isSelected = selectedDate === dateStr;
+          const isToday = day.getTime() === today.getTime();
+
+          return (
+            <button
+              key={dateStr}
+              onClick={() => !disabled && onSelect(dateStr)}
+              disabled={disabled}
+              className={[
+                'flex aspect-square items-center justify-center rounded-xl text-sm font-medium transition-colors',
+                disabled
+                  ? 'cursor-not-allowed text-gray-300'
+                  : 'cursor-pointer text-gray-800 hover:bg-blue-50',
+                isSelected && '!bg-blue-600 !text-white',
+                isToday && !disabled && !isSelected && 'ring-2 ring-blue-300 ring-offset-1',
+              ].filter(Boolean).join(' ')}
+            >
+              {day.getDate()}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Step: Slot ────────────────────────────────────────────────────────────────
+
+function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, slotsLoading }) {
+  const label = dateLabel(date);
+
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver
+      </button>
+      <h2 className="mb-1 text-xl font-bold text-gray-800">Elegí un horario</h2>
+      <p className="mb-5 text-sm capitalize text-gray-500">{label}</p>
+
+      {slotsLoading ? (
+        <p className="py-6 text-center text-sm text-gray-400">Cargando horarios...</p>
+      ) : slots.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-400">No hay turnos disponibles para este día.</p>
+      ) : (
+        <div className="mb-6 grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {slots.map((slot) => (
+            <button
+              key={slot}
+              onClick={() => onSelect(slot)}
+              className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
+                selectedSlot === slot
+                  ? 'border-blue-500 bg-blue-600 text-white'
+                  : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+              }`}
+            >
+              {slot}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+
+      <button
+        onClick={onNext}
+        disabled={!selectedSlot || slotsLoading}
+        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+      >
+        Continuar →
+      </button>
+    </div>
+  );
+}
+
+// ── Step: Form ────────────────────────────────────────────────────────────────
+
+function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading, error }) {
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver
+      </button>
+      <h2 className="mb-1 text-2xl font-bold text-gray-800">Tus datos</h2>
+      <p className="mb-4 text-sm text-gray-500">Completá tus datos para confirmar el turno.</p>
+
+      {/* Summary */}
+      <div className="mb-6 rounded-xl bg-blue-50 px-4 py-3 text-sm">
+        <div className="flex justify-between py-0.5">
+          <span className="text-gray-500">Fecha</span>
+          <span className="font-medium capitalize text-gray-800">{dateLabel(date)}</span>
+        </div>
+        <div className="flex justify-between py-0.5">
+          <span className="text-gray-500">Hora</span>
+          <span className="font-medium text-gray-800">{time}</span>
+        </div>
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="flex flex-col gap-4">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Nombre completo</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onChange('name', e.target.value)}
+            placeholder="Juan García"
+            required
+            autoFocus
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">Correo electrónico</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => onChange('email', e.target.value)}
+            placeholder="juan@ejemplo.com"
+            required
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+        </div>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-2 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+        >
+          {loading ? 'Reservando...' : 'Confirmar reserva'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ── Step: Done ────────────────────────────────────────────────────────────────
+
+function DoneStep({ turn, onNew, onHome }) {
+  const label = dateLabel(turn.scheduledDate);
+
+  return (
+    <div className="rounded-2xl bg-white p-8 text-center shadow-md">
+      <div className="mb-4 text-5xl">✅</div>
+      <h2 className="text-2xl font-bold text-gray-800">¡Turno reservado!</h2>
+      <p className="mt-2 text-sm text-gray-500">Guardá este número para el día de tu turno.</p>
+
+      <div className="my-6 rounded-xl bg-blue-600 px-6 py-5 text-white">
+        <p className="text-sm font-medium opacity-80">Tu número de turno</p>
+        <p className="text-6xl font-black">{String(turn.number).padStart(3, '0')}</p>
+      </div>
+
+      <div className="rounded-xl bg-gray-50 p-4 text-left text-sm">
+        <div className="flex justify-between py-1.5">
+          <span className="text-gray-500">Nombre</span>
+          <span className="font-medium text-gray-800">{turn.customerName}</span>
+        </div>
+        <div className="flex justify-between py-1.5">
+          <span className="text-gray-500">Fecha</span>
+          <span className="font-medium capitalize text-gray-800">{label}</span>
+        </div>
+        <div className="flex justify-between py-1.5">
+          <span className="text-gray-500">Hora</span>
+          <span className="font-medium text-gray-800">{turn.scheduledTime}</span>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-2">
+        <button
+          onClick={onHome}
+          className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        >
+          Volver al inicio
+        </button>
+        <button
+          onClick={onNew}
+          className="w-full rounded-xl border border-gray-200 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          Reservar otro turno
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function ReservarPage() {
+  const navigate = useNavigate();
+  const [state, dispatch] = useReducer(reducer, initial);
+  const { step, name, email, workingDays, selectedDate, availableSlots, selectedSlot, turn, loading, error, slotsLoading } = state;
+
+  // Load working days config on mount
+  useEffect(() => {
+    getPublicConfig()
+      .then((cfg) => dispatch({ type: 'SET_CONFIG', payload: cfg.workingDays }))
+      .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudo cargar la configuración.' }));
+  }, []);
+
+  // Load available slots whenever a date is selected
+  useEffect(() => {
+    if (!selectedDate) return;
+    getAvailableSlots(selectedDate)
+      .then((slots) => dispatch({ type: 'SET_SLOTS', payload: slots }))
+      .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudieron cargar los horarios.' }));
+  }, [selectedDate]);
+
+  const handleConfirm = async () => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: '' });
+    try {
+      const newTurn = await createTurn({
+        customerName: name.trim(),
+        email: email.trim(),
+        scheduledDate: selectedDate,
+        scheduledTime: selectedSlot,
+      });
+      dispatch({ type: 'DONE', payload: newTurn });
+    } catch (e) {
+      dispatch({ type: 'SET_ERROR', payload: e.message || 'Error al reservar. Intentá de nuevo.' });
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
+      <div className="w-full max-w-lg">
+        {step === STEPS.DATE && (
+          loading ? (
+            <div className="rounded-2xl bg-white p-8 text-center shadow-md">
+              <p className="text-sm text-gray-400">Cargando...</p>
+            </div>
+          ) : error ? (
+            <div className="rounded-2xl bg-white p-8 text-center shadow-md">
+              <p className="mb-4 text-sm text-red-500">{error}</p>
+              <button onClick={() => navigate('/kiosko')} className="text-sm text-gray-500 hover:text-gray-700">
+                ← Volver al inicio
+              </button>
+            </div>
+          ) : (
+            <CalendarStep
+              workingDays={workingDays}
+              selectedDate={selectedDate}
+              onSelect={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+              onBack={() => navigate('/kiosko')}
+            />
+          )
+        )}
+
+        {step === STEPS.SLOT && (
+          <SlotStep
+            date={selectedDate}
+            slots={availableSlots}
+            selectedSlot={selectedSlot}
+            onSelect={(slot) => dispatch({ type: 'SELECT_SLOT', payload: slot })}
+            onNext={() => dispatch({ type: 'NEXT_FORM' })}
+            onBack={() => dispatch({ type: 'BACK_TO_DATE' })}
+            error={error}
+            slotsLoading={slotsLoading}
+          />
+        )}
+
+        {step === STEPS.FORM && (
+          <FormStep
+            name={name}
+            email={email}
+            date={selectedDate}
+            time={selectedSlot}
+            onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })}
+            onSubmit={handleConfirm}
+            onBack={() => dispatch({ type: 'BACK_TO_SLOT' })}
+            loading={loading}
+            error={error}
+          />
+        )}
+
+        {step === STEPS.DONE && (
+          <DoneStep
+            turn={turn}
+            onNew={() => navigate('/kiosko/reservar', { replace: true })}
+            onHome={() => navigate('/kiosko')}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
