@@ -1,16 +1,20 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPublicConfig, getAvailableSlots, createTurn } from '../api/public';
+import { getPublicConfig, getProfessionals, getAvailableSlots, createTurn } from '../api/public';
 
 // ── State machine ─────────────────────────────────────────────────────────────
+// PROFESSIONAL → DATE → SLOT → FORM → DONE
+// La disponibilidad depende del peluquero elegido, por eso es el primer paso.
 
-const STEPS = { DATE: 'DATE', SLOT: 'SLOT', FORM: 'FORM', DONE: 'DONE' };
+const STEPS = { PROFESSIONAL: 'PROFESSIONAL', DATE: 'DATE', SLOT: 'SLOT', FORM: 'FORM', DONE: 'DONE' };
 
 const initial = {
-  step: STEPS.DATE,
+  step: STEPS.PROFESSIONAL,
   name: '',
   email: '',
   workingDays: [],
+  professionals: [],
+  selectedProfessional: null,
   selectedDate: null,
   availableSlots: [],
   slotsLoading: false,
@@ -24,8 +28,12 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
-    case 'SET_CONFIG':
-      return { ...state, workingDays: action.payload, loading: false };
+    case 'SET_INIT':
+      return { ...state, workingDays: action.payload.workingDays, professionals: action.payload.professionals, loading: false };
+    case 'SELECT_PROFESSIONAL':
+      return { ...state, selectedProfessional: action.payload, step: STEPS.DATE, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
+    case 'BACK_TO_PROFESSIONAL':
+      return { ...state, step: STEPS.PROFESSIONAL, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
     case 'SELECT_DATE':
       return { ...state, selectedDate: action.payload, availableSlots: [], selectedSlot: null, slotsLoading: true, error: '' };
     case 'SET_SLOTS':
@@ -69,6 +77,41 @@ function dateLabel(dateStr) {
     day: 'numeric',
     month: 'long',
   });
+}
+
+// ── Step: Professional ──────────────────────────────────────────────────────────
+
+function ProfessionalStep({ professionals, selectedProfessional, onSelect, onBack }) {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver al inicio
+      </button>
+      <h2 className="mb-1 text-xl font-bold text-gray-800">¿Con quién querés atenderte?</h2>
+      <p className="mb-5 text-sm text-gray-500">Elegí el peluquero para ver sus horarios.</p>
+
+      {professionals.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-400">No hay peluqueros disponibles por el momento.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {professionals.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p)}
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                selectedProfessional?.id === p.id
+                  ? 'border-blue-500 bg-blue-600 text-white'
+                  : 'border-gray-200 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
+              }`}
+            >
+              <span>{p.name}</span>
+              <span aria-hidden>→</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Step: Calendar ────────────────────────────────────────────────────────────
@@ -214,7 +257,7 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
 
 // ── Step: Form ────────────────────────────────────────────────────────────────
 
-function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading, error }) {
+function FormStep({ name, email, date, time, professionalName, onChange, onSubmit, onBack, loading, error }) {
   return (
     <div className="rounded-2xl bg-white p-8 shadow-md">
       <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
@@ -225,6 +268,12 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
 
       {/* Summary */}
       <div className="mb-6 rounded-xl bg-blue-50 px-4 py-3 text-sm">
+        {professionalName && (
+          <div className="flex justify-between py-0.5">
+            <span className="text-gray-500">Peluquero</span>
+            <span className="font-medium text-gray-800">{professionalName}</span>
+          </div>
+        )}
         <div className="flex justify-between py-0.5">
           <span className="text-gray-500">Fecha</span>
           <span className="font-medium capitalize text-gray-800">{dateLabel(date)}</span>
@@ -274,7 +323,7 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
 
 // ── Step: Done ────────────────────────────────────────────────────────────────
 
-function DoneStep({ turn, onNew, onHome }) {
+function DoneStep({ turn, professionalName, onNew, onHome }) {
   const label = dateLabel(turn.scheduledDate);
 
   return (
@@ -293,6 +342,12 @@ function DoneStep({ turn, onNew, onHome }) {
           <span className="text-gray-500">Nombre</span>
           <span className="font-medium text-gray-800">{turn.customerName}</span>
         </div>
+        {professionalName && (
+          <div className="flex justify-between py-1.5">
+            <span className="text-gray-500">Peluquero</span>
+            <span className="font-medium text-gray-800">{professionalName}</span>
+          </div>
+        )}
         <div className="flex justify-between py-1.5">
           <span className="text-gray-500">Fecha</span>
           <span className="font-medium capitalize text-gray-800">{label}</span>
@@ -326,22 +381,23 @@ function DoneStep({ turn, onNew, onHome }) {
 export default function ReservarPage() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, initial);
-  const { step, name, email, workingDays, selectedDate, availableSlots, selectedSlot, turn, loading, error, slotsLoading } = state;
+  const { step, name, email, workingDays, professionals, selectedProfessional, selectedDate, availableSlots, selectedSlot, turn, loading, error, slotsLoading } = state;
 
-  // Load working days config on mount
+  // Load config + professionals on mount
   useEffect(() => {
-    getPublicConfig()
-      .then((cfg) => dispatch({ type: 'SET_CONFIG', payload: cfg.workingDays }))
+    Promise.all([getPublicConfig(), getProfessionals()])
+      .then(([cfg, professionals]) =>
+        dispatch({ type: 'SET_INIT', payload: { workingDays: cfg.workingDays, professionals } }))
       .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudo cargar la configuración.' }));
   }, []);
 
-  // Load available slots whenever a date is selected
+  // Load available slots whenever a date is selected (por peluquero)
   useEffect(() => {
-    if (!selectedDate) return;
-    getAvailableSlots(selectedDate)
+    if (!selectedDate || !selectedProfessional) return;
+    getAvailableSlots(selectedDate, selectedProfessional.id)
       .then((slots) => dispatch({ type: 'SET_SLOTS', payload: slots }))
       .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudieron cargar los horarios.' }));
-  }, [selectedDate]);
+  }, [selectedDate, selectedProfessional]);
 
   const handleConfirm = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -352,6 +408,7 @@ export default function ReservarPage() {
         email: email.trim(),
         scheduledDate: selectedDate,
         scheduledTime: selectedSlot,
+        professionalId: selectedProfessional?.id,
       });
       dispatch({ type: 'DONE', payload: newTurn });
     } catch (e) {
@@ -362,7 +419,7 @@ export default function ReservarPage() {
   return (
     <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
       <div className="w-full max-w-lg">
-        {step === STEPS.DATE && (
+        {step === STEPS.PROFESSIONAL && (
           loading ? (
             <div className="rounded-2xl bg-white p-8 text-center shadow-md">
               <p className="text-sm text-gray-400">Cargando...</p>
@@ -375,13 +432,22 @@ export default function ReservarPage() {
               </button>
             </div>
           ) : (
-            <CalendarStep
-              workingDays={workingDays}
-              selectedDate={selectedDate}
-              onSelect={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            <ProfessionalStep
+              professionals={professionals}
+              selectedProfessional={selectedProfessional}
+              onSelect={(p) => dispatch({ type: 'SELECT_PROFESSIONAL', payload: p })}
               onBack={() => navigate('/kiosko')}
             />
           )
+        )}
+
+        {step === STEPS.DATE && (
+          <CalendarStep
+            workingDays={workingDays}
+            selectedDate={selectedDate}
+            onSelect={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            onBack={() => dispatch({ type: 'BACK_TO_PROFESSIONAL' })}
+          />
         )}
 
         {step === STEPS.SLOT && (
@@ -403,6 +469,7 @@ export default function ReservarPage() {
             email={email}
             date={selectedDate}
             time={selectedSlot}
+            professionalName={selectedProfessional?.name}
             onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })}
             onSubmit={handleConfirm}
             onBack={() => dispatch({ type: 'BACK_TO_SLOT' })}
@@ -414,6 +481,7 @@ export default function ReservarPage() {
         {step === STEPS.DONE && (
           <DoneStep
             turn={turn}
+            professionalName={selectedProfessional?.name}
             onNew={() => navigate('/kiosko/reservar', { replace: true })}
             onHome={() => navigate('/kiosko')}
           />

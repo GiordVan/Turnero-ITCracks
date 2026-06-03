@@ -6,9 +6,15 @@ const getPublicConfig = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
+const listProfessionals = async (req, res, next) => {
+  try {
+    res.json(await publicService.listProfessionals());
+  } catch (e) { next(e); }
+};
+
 const getAvailableSlots = async (req, res, next) => {
   try {
-    res.json(await publicService.getAvailableSlots(req.query.date));
+    res.json(await publicService.getAvailableSlots(req.query.date, req.query.professionalId));
   } catch (e) { next(e); }
 };
 
@@ -30,4 +36,4 @@ const cancelTurn = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getPublicConfig, getAvailableSlots, createTurn, getMyTurns, cancelTurn };
+module.exports = { getPublicConfig, listProfessionals, getAvailableSlots, createTurn, getMyTurns, cancelTurn };

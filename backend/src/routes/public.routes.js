@@ -7,9 +7,11 @@ const router = Router();
 
 router.get('/config', publicController.getPublicConfig);
 
+router.get('/professionals', publicController.listProfessionals);
+
 router.get(
   '/available-slots',
-  [query('date').isDate()],
+  [query('date').isDate(), query('professionalId').isString().notEmpty()],
   validate,
   publicController.getAvailableSlots,
 );
@@ -21,6 +23,7 @@ router.post(
     body('email').isEmail().normalizeEmail(),
     body('scheduledDate').isDate(),
     body('scheduledTime').matches(/^\d{2}:\d{2}$/),
+    body('professionalId').isString().notEmpty(),
   ],
   validate,
   publicController.createTurn,

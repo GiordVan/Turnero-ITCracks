@@ -1,6 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const CONFIG_ID = 'singleton';
 
@@ -71,6 +69,7 @@ const getDailyTurns = async (dateStr) => {
   return prisma.turn.findMany({
     where: { scheduledDate: date },
     orderBy: { scheduledTime: 'asc' },
+    include: { professional: { select: { id: true, name: true } } },
   });
 };
 

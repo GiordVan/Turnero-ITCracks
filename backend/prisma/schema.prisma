@@ -42,6 +42,19 @@ model Service {
   turns       Turn[]
 }
 
+// Peluquero/profesional con el que se reserva. Padre e hijo = dos Professional.
+// La disponibilidad y el conflicto de turnos se calculan POR profesional, de
+// modo que el 10:30 con uno no bloquea el 10:30 con el otro.
+model Professional {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  turns     Turn[]
+}
+
 model AdminConfig {
   id           String   @id
   turnDuration Int      @default(30)
@@ -71,6 +84,9 @@ model Turn {
   notes         String?
   serviceId     String?
   service       Service?   @relation(fields: [serviceId], references: [id])
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  reminderSentAt DateTime?
   calledAt      DateTime?
   attendedAt    DateTime?
   completedAt   DateTime?
@@ -80,4 +96,6 @@ model Turn {
   @@index([status])
   @@index([scheduledDate])
   @@index([email])
+  @@index([professionalId])
+  @@index([scheduledDate, professionalId])
 }

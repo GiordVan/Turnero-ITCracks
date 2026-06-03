@@ -13,13 +13,6 @@ function toLocalDateStr(date = new Date()) {
   return date.toLocaleDateString('sv-SE'); // produces YYYY-MM-DD in local TZ
 }
 
-function formatTime(isoString) {
-  return new Date(isoString).toLocaleTimeString('es-AR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 function StatusBadge({ status }) {
   const { label, cls } = STATUS_CONFIG[status] ?? { label: status, cls: 'bg-gray-100' };
   return (
@@ -47,9 +40,12 @@ function StatsBar({ turns }) {
   );
 }
 
+const ALL = 'ALL';
+
 export default function TurnosPage() {
   const [date, setDate] = useState(toLocalDateStr());
   const [turns, setTurns] = useState([]);
+  const [profFilter, setProfFilter] = useState(ALL);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -62,21 +58,45 @@ export default function TurnosPage() {
       .finally(() => setLoading(false));
   }, [date]);
 
+  // Peluqueros presentes en los turnos del día (para el filtro de agenda)
+  const professionals = Array.from(
+    new Map(
+      turns
+        .filter((t) => t.professional)
+        .map((t) => [t.professional.id, t.professional]),
+    ).values(),
+  );
+
+  const visibleTurns =
+    profFilter === ALL ? turns : turns.filter((t) => t.professionalId === profFilter);
+
   return (
     <div className="p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-800">Turnos del día</h1>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-        />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold text-gray-800">Agenda del día</h1>
+        <div className="flex items-center gap-2">
+          <select
+            value={profFilter}
+            onChange={(e) => setProfFilter(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          >
+            <option value={ALL}>Todos los peluqueros</option>
+            {professionals.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+        </div>
       </div>
 
       {/* Stats */}
-      {!loading && !error && <StatsBar turns={turns} />}
+      {!loading && !error && <StatsBar turns={visibleTurns} />}
 
       {/* Table */}
       <div className="rounded-xl bg-white shadow-sm">
@@ -84,7 +104,7 @@ export default function TurnosPage() {
           <div className="py-16 text-center text-sm text-gray-400">Cargando...</div>
         ) : error ? (
           <div className="py-16 text-center text-sm text-red-500">{error}</div>
-        ) : turns.length === 0 ? (
+        ) : visibleTurns.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-gray-400">Sin turnos para esta fecha.</p>
           </div>
@@ -93,14 +113,14 @@ export default function TurnosPage() {
             <thead>
               <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                 <th className="px-5 py-3">#</th>
+                <th className="px-5 py-3">Hora</th>
                 <th className="px-5 py-3">Cliente</th>
-                <th className="px-5 py-3">Servicio</th>
+                <th className="px-5 py-3">Peluquero</th>
                 <th className="px-5 py-3">Estado</th>
-                <th className="px-5 py-3">Creado</th>
               </tr>
             </thead>
             <tbody>
-              {turns.map((turn) => (
+              {visibleTurns.map((turn) => (
                 <tr
                   key={turn.id}
                   className="border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50"
@@ -108,14 +128,18 @@ export default function TurnosPage() {
                   <td className="px-5 py-3.5 font-semibold text-gray-700">
                     {String(turn.number).padStart(3, '0')}
                   </td>
+                  <td className="px-5 py-3.5 font-medium text-gray-700">
+                    {turn.scheduledTime ?? <span className="text-gray-400">—</span>}
+                  </td>
                   <td className="px-5 py-3.5 text-gray-800">
                     {turn.customerName ?? <span className="text-gray-400">Sin nombre</span>}
                   </td>
-                  <td className="px-5 py-3.5 text-gray-600">{turn.service?.name}</td>
+                  <td className="px-5 py-3.5 text-gray-600">
+                    {turn.professional?.name ?? <span className="text-gray-400">—</span>}
+                  </td>
                   <td className="px-5 py-3.5">
                     <StatusBadge status={turn.status} />
                   </td>
-                  <td className="px-5 py-3.5 text-gray-500">{formatTime(turn.createdAt)}</td>
                 </tr>
               ))}
             </tbody>

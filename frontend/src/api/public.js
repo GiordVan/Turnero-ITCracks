@@ -1,8 +1,9 @@
 import apiClient from './client';
 
 export const getPublicConfig = () => apiClient.get('/public/config');
-export const getAvailableSlots = (date) =>
-  apiClient.get('/public/available-slots', { params: { date } });
+export const getProfessionals = () => apiClient.get('/public/professionals');
+export const getAvailableSlots = (date, professionalId) =>
+  apiClient.get('/public/available-slots', { params: { date, professionalId } });
 export const createTurn = (data) => apiClient.post('/public/turns', data);
 export const getMyTurns = (email) =>
   apiClient.get('/public/my-turns', { params: { email } });
