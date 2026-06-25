@@ -1,4 +1,5 @@
 const adminService = require('../services/admin.service');
+const analyticsService = require('../services/analytics.service');
 
 const getConfig = async (req, res, next) => {
   try {
@@ -65,6 +66,14 @@ const getNotifications = async (req, res, next) => {
   }
 };
 
+const getAnalytics = async (req, res, next) => {
+  try {
+    res.json(await analyticsService.getDashboard());
+  } catch (e) {
+    next(e);
+  }
+};
+
 module.exports = {
   getConfig,
   updateConfig,
@@ -74,4 +83,5 @@ module.exports = {
   deleteWorkBand,
   getDailyTurns,
   getNotifications,
+  getAnalytics,
 };

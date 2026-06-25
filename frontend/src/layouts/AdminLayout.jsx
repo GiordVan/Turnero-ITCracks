@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import NotificationBell from '../components/NotificationBell';
 
 const navItems = [
+  { to: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/admin/turnos', label: 'Turnos del día', icon: '📋' },
   { to: '/admin/notificaciones', label: 'Mensajes', icon: '💬' },
   { to: '/admin/config', label: 'Configuración', icon: '⚙️' },

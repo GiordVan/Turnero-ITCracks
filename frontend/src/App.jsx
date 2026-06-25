@@ -9,6 +9,7 @@ import MisTurnosPage from './pages/MisTurnosPage';
 import TurnosPage from './pages/admin/TurnosPage';
 import ConfigPage from './pages/admin/ConfigPage';
 import NotificacionesPage from './pages/admin/NotificacionesPage';
+import DashboardPage from './pages/admin/DashboardPage';
 
 export default function App() {
   return (
@@ -24,7 +25,8 @@ export default function App() {
           {/* Admin */}
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
             <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<Navigate to="/admin/turnos" replace />} />
+              <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="/admin/dashboard" element={<DashboardPage />} />
               <Route path="/admin/turnos" element={<TurnosPage />} />
               <Route path="/admin/config" element={<ConfigPage />} />
               <Route path="/admin/notificaciones" element={<NotificacionesPage />} />

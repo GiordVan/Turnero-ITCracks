@@ -21,6 +21,9 @@ const config = {
     apiKey: process.env.EVOLUTION_API_KEY || '',
     instance: process.env.EVOLUTION_INSTANCE || '',
   },
+  analytics: {
+    launchDate: process.env.ANALYTICS_LAUNCH_DATE || '2026-05-01',
+  },
 };
 
 const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];

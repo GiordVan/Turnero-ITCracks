@@ -9,6 +9,8 @@
     "start:prod": "prisma migrate deploy && node src/app.js",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
+    "db:seed-demo": "node prisma/seed-demo.js",
+    "db:cleanup-demo": "node prisma/cleanup-demo.js",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "test": "vitest run",

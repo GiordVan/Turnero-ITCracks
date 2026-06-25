@@ -78,4 +78,7 @@ router.get(
 
 router.get('/notifications', adminController.getNotifications);
 
+// Analytics / dashboard de conversión
+router.get('/analytics', adminController.getAnalytics);
+
 module.exports = router;

@@ -16,3 +16,6 @@ export const getDailyTurns = (date) =>
 
 // Notifications
 export const getNotifications = () => apiClient.get('/admin/notifications');
+
+// Analytics
+export const getAnalytics = () => apiClient.get('/admin/analytics');
