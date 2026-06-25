@@ -20,6 +20,25 @@ recordatorio automático apunta a reducir los plantones (no-shows).
 - **Recordatorio programado**: un cron in-process busca turnos próximos y manda un
   email (Resend), una sola vez por turno.
 
+## Novedades v2 (seña + WhatsApp + analítica)
+
+- **Seña simulada (pluggable):** al reservar, el cliente paga una seña para confirmar. Arquitectura lista para enchufar MercadoPago real (`PAYMENT_PROVIDER=simulated|mercadopago`, `DEPOSIT_AMOUNT`).
+- **Recordatorio/confirmación por WhatsApp (Evolution API):** confirmación al reservar + recordatorio programado. `WHATSAPP_MODE=simulated` (demo, registra el mensaje sin enviarlo) o `live` (pega a Evolution API: `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`). Panel admin "Mensajes enviados" en `/admin/notificaciones`.
+- **Dashboard de conversión** (`/admin/dashboard`): no-show antes/después del sistema, recordatorios confirmados, ingresos por seña, clientes recurrentes y ocupación por peluquero. Corte de "lanzamiento" configurable con `ANALYTICS_LAUNCH_DATE`.
+
+### Datos demo
+- `cd backend && npm run db:seed-demo` — siembra ~3 meses de historia (idempotente, tagueada, con backup previo en `backend/backups/`).
+- `npm run db:cleanup-demo` — borra la historia demo.
+
+### Variables de entorno nuevas (ver backend/.env.example)
+`PAYMENT_PROVIDER`, `DEPOSIT_AMOUNT`, `DEPOSIT_CURRENCY`, `WHATSAPP_MODE`, `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`, `ANALYTICS_LAUNCH_DATE`.
+
+### Deuda de seguridad conocida (post-demo)
+- Rate limiting en endpoints públicos y en login (`express-rate-limit`).
+- `GET /public/my-turns` por email expone datos sin verificación (agregar código de un solo uso).
+- SSE admin pasa el JWT por query string (usar token efímero dedicado).
+- Validar entropía mínima de `JWT_SECRET` y exigir `CORS_ORIGIN` en producción.
+
 ## Stack
 
 | Capa | Tecnología |

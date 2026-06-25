@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getNotifications } from '../../api/admin';
 
 const TYPE_CONFIG = {
-  CONFIRMATION: { label: 'Confirmación', cls: 'bg-blue-100 text-blue-700' },
+  CONFIRMATION: { label: 'Confirmación', cls: 'bg-brass/20 text-brick' },
   REMINDER:     { label: 'Recordatorio', cls: 'bg-purple-100 text-purple-700' },
 };
 

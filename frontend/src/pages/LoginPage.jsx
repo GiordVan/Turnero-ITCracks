@@ -45,7 +45,7 @@ export default function LoginPage() {
               value={form.email}
               onChange={handleChange}
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
             />
           </div>
           <div>
@@ -58,14 +58,14 @@ export default function LoginPage() {
               value={form.password}
               onChange={handleChange}
               required
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
             />
           </div>
           {error && <p className="text-sm text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="rounded-lg bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+            className="rounded-lg bg-brick py-2 text-sm font-medium text-white hover:bg-brick-dark disabled:opacity-60"
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>

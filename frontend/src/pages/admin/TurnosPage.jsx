@@ -4,7 +4,7 @@ import { getDailyTurns } from '../../api/admin';
 const STATUS_CONFIG = {
   WAITING:     { label: 'Esperando',   cls: 'bg-gray-100 text-gray-700' },
   CALLED:      { label: 'Llamado',     cls: 'bg-yellow-100 text-yellow-700' },
-  IN_PROGRESS: { label: 'En atención', cls: 'bg-blue-100 text-blue-700' },
+  IN_PROGRESS: { label: 'En atención', cls: 'bg-brass/20 text-brick' },
   COMPLETED:   { label: 'Completado',  cls: 'bg-green-100 text-green-700' },
   CANCELLED:   { label: 'Cancelado',   cls: 'bg-red-100 text-red-700' },
 };
@@ -79,7 +79,7 @@ export default function TurnosPage() {
           <select
             value={profFilter}
             onChange={(e) => setProfFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           >
             <option value={ALL}>Todos los peluqueros</option>
             {professionals.map((p) => (
@@ -90,7 +90,7 @@ export default function TurnosPage() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
       </div>

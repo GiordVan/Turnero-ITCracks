@@ -103,11 +103,16 @@ const getMyTurns = async (email) => {
 };
 
 // ── Cancel turn ───────────────────────────────────────────────────────────────
-const cancelTurn = async (id) => {
+const cancelTurn = async (id, email) => {
   const turn = await prisma.turn.findUnique({ where: { id } });
   if (!turn) {
     const err = new Error('Turno no encontrado');
     err.statusCode = 404;
+    throw err;
+  }
+  if (email && turn.email && turn.email.toLowerCase() !== email.toLowerCase()) {
+    const err = new Error('No estás autorizado a cancelar este turno.');
+    err.statusCode = 403;
     throw err;
   }
   if (!['WAITING', 'CALLED'].includes(turn.status)) {

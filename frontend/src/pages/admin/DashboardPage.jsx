@@ -114,7 +114,7 @@ export default function DashboardPage() {
           label="Confirman por WhatsApp"
           value={pct(reminders.responseRate)}
           sub={`${reminders.confirmed} de ${reminders.sent} recordatorios`}
-          accent="text-blue-600"
+          accent="text-brick"
         />
         <KpiCard
           label="Cobrado en señas"
@@ -126,7 +126,7 @@ export default function DashboardPage() {
           label="Clientes recurrentes"
           value={pct(conversion.repeatRate)}
           sub={`${conversion.repeatCustomers} de ${conversion.uniqueCustomers} clientes volvieron`}
-          accent="text-indigo-600"
+          accent="text-wood"
         />
       </div>
 
@@ -134,7 +134,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <ChartCard title="Tasa de ausentismo: antes vs. después del sistema">
           <BarChart data={noShowData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8ddc9" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis unit="%" tick={{ fontSize: 12 }} />
             <Tooltip formatter={(v) => `${v}%`} />
@@ -147,25 +147,25 @@ export default function DashboardPage() {
 
         <ChartCard title="Ocupación por peluquero">
           <BarChart data={occData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8ddc9" />
             <XAxis dataKey="name" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Total" fill="#93c5fd" radius={[6, 6, 0, 0]} />
-            <Bar dataKey="Completados" fill="#2563eb" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Total" fill="#d9b88a" radius={[6, 6, 0, 0]} />
+            <Bar dataKey="Completados" fill="#a8392e" radius={[6, 6, 0, 0]} />
           </BarChart>
         </ChartCard>
 
         <div className="lg:col-span-2">
           <ChartCard title="Reservas y ausencias por mes">
             <LineChart data={seriesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e8ddc9" />
               <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="Reservas" stroke="#2563eb" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="Reservas" stroke="#a8392e" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="Ausencias" stroke="#ef4444" strokeWidth={2} dot={false} />
             </LineChart>
           </ChartCard>

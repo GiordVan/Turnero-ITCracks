@@ -11,9 +11,9 @@ const STATUS_LABEL = {
 };
 
 const STATUS_CLS = {
-  WAITING:     'bg-blue-100 text-blue-700',
+  WAITING:     'bg-brass/20 text-brick',
   CALLED:      'bg-yellow-100 text-yellow-700',
-  IN_PROGRESS: 'bg-indigo-100 text-indigo-700',
+  IN_PROGRESS: 'bg-brass/20 text-wood',
   COMPLETED:   'bg-green-100 text-green-700',
   CANCELLED:   'bg-red-100 text-red-700',
 };
@@ -40,7 +40,7 @@ export default function MisTurnosPage() {
     if (!window.confirm('¿Seguro que querés cancelar este turno?')) return;
     setCancelling(id);
     try {
-      await cancelTurn(id);
+      await cancelTurn(id, email);
       setTurns((prev) => prev.map((t) => t.id === id ? { ...t, status: 'CANCELLED' } : t));
     } catch {
       alert('No se pudo cancelar el turno. Intentá de nuevo.');
@@ -66,7 +66,7 @@ export default function MisTurnosPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-cream to-paper p-6 pt-16">
       <div className="w-full max-w-md">
         <button
           onClick={() => navigate('/kiosko')}
@@ -88,12 +88,12 @@ export default function MisTurnosPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
               required
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
             />
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              className="rounded-xl bg-brick px-5 py-2.5 text-sm font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
             >
               {loading ? '...' : 'Buscar'}
             </button>
@@ -111,7 +111,7 @@ export default function MisTurnosPage() {
                 <p className="mt-3 font-semibold text-gray-700">No posee turnos reservados</p>
                 <button
                   onClick={() => navigate('/kiosko/reservar')}
-                  className="mt-4 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="mt-4 rounded-xl bg-brick px-6 py-2.5 text-sm font-semibold text-white hover:bg-brick-dark"
                 >
                   Sacar un turno
                 </button>

@@ -33,19 +33,19 @@ const getMyTurns = async (req, res, next) => {
 
 const cancelTurn = async (req, res, next) => {
   try {
-    res.json(await publicService.cancelTurn(req.params.id));
+    res.json(await publicService.cancelTurn(req.params.id, req.body.email));
   } catch (e) { next(e); }
 };
 
 const createDeposit = async (req, res, next) => {
   try {
-    res.status(201).json(await depositService.createDeposit(req.params.id));
+    res.status(201).json(await depositService.createDeposit(req.params.id, req.body.email));
   } catch (e) { next(e); }
 };
 
 const confirmDeposit = async (req, res, next) => {
   try {
-    const payment = await depositService.confirmDeposit(req.params.id);
+    const payment = await depositService.confirmDeposit(req.params.id, req.body.email);
     depositService
       .notifyConfirmation(payment.turnId)
       .catch((e) => console.error('[deposit] confirmacion WhatsApp no enviada:', e.message));

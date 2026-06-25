@@ -19,7 +19,7 @@ function makeDb(overrides = {}) {
 describe('createDeposit', () => {
   it('crea un pago PENDING con monto de config', async () => {
     const db = makeDb();
-    const payment = await createDeposit('T1', db);
+    const payment = await createDeposit('T1', 'x@y.com', db);
     expect(db.payment.create).toHaveBeenCalled();
     expect(payment.status).toBe('PENDING');
     expect(typeof payment.amount).toBe('number');
@@ -33,21 +33,21 @@ describe('createDeposit', () => {
         create: vi.fn(),
       },
     });
-    const payment = await createDeposit('T1', db);
+    const payment = await createDeposit('T1', 'x@y.com', db);
     expect(payment.id).toBe('EXIST');
     expect(db.payment.create).not.toHaveBeenCalled();
   });
 
   it('turno inexistente -> 404', async () => {
     const db = makeDb({ turn: { findUnique: vi.fn().mockResolvedValue(null) } });
-    await expect(createDeposit('ZZZ', db)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(createDeposit('ZZZ', 'x@y.com', db)).rejects.toMatchObject({ statusCode: 404 });
   });
 });
 
 describe('confirmDeposit', () => {
   it('marca el pago como PAID con paidAt', async () => {
     const db = makeDb();
-    const payment = await confirmDeposit('P1', db);
+    const payment = await confirmDeposit('P1', 'x@y.com', db);
     expect(payment.status).toBe('PAID');
     expect(payment.paidAt).toBeInstanceOf(Date);
     expect(db.payment.update).toHaveBeenCalled();
@@ -55,7 +55,7 @@ describe('confirmDeposit', () => {
 
   it('pago inexistente -> 404', async () => {
     const db = makeDb({ payment: { findUnique: vi.fn().mockResolvedValue(null) } });
-    await expect(confirmDeposit('ZZZ', db)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(confirmDeposit('ZZZ', 'x@y.com', db)).rejects.toMatchObject({ statusCode: 404 });
   });
 
   it('es idempotente: si el pago ya esta PAID, no vuelve a actualizar', async () => {
@@ -65,7 +65,7 @@ describe('confirmDeposit', () => {
         update: vi.fn(),
       },
     });
-    const payment = await confirmDeposit('P1', db);
+    const payment = await confirmDeposit('P1', 'x@y.com', db);
     expect(payment.status).toBe('PAID');
     expect(db.payment.update).not.toHaveBeenCalled();
   });

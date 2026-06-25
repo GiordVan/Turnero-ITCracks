@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
@@ -9,7 +10,7 @@ import MisTurnosPage from './pages/MisTurnosPage';
 import TurnosPage from './pages/admin/TurnosPage';
 import ConfigPage from './pages/admin/ConfigPage';
 import NotificacionesPage from './pages/admin/NotificacionesPage';
-import DashboardPage from './pages/admin/DashboardPage';
+const DashboardPage = lazy(() => import('./pages/admin/DashboardPage'));
 
 export default function App() {
   return (
@@ -26,7 +27,14 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="/admin/dashboard" element={<DashboardPage />} />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <Suspense fallback={<div className="p-8 text-sm text-gray-400">Cargando…</div>}>
+                    <DashboardPage />
+                  </Suspense>
+                }
+              />
               <Route path="/admin/turnos" element={<TurnosPage />} />
               <Route path="/admin/config" element={<ConfigPage />} />
               <Route path="/admin/notificaciones" element={<NotificacionesPage />} />

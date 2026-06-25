@@ -7,6 +7,6 @@ export const getAvailableSlots = (date, professionalId) =>
 export const createTurn = (data) => apiClient.post('/public/turns', data);
 export const getMyTurns = (email) =>
   apiClient.get('/public/my-turns', { params: { email } });
-export const cancelTurn = (id) => apiClient.patch(`/public/turns/${id}/cancel`);
-export const createDeposit = (turnId) => apiClient.post(`/public/turns/${turnId}/deposit`);
-export const confirmDeposit = (paymentId) => apiClient.post(`/public/deposits/${paymentId}/confirm`);
+export const cancelTurn = (id, email) => apiClient.patch(`/public/turns/${id}/cancel`, { email });
+export const createDeposit = (turnId, email) => apiClient.post(`/public/turns/${turnId}/deposit`, { email });
+export const confirmDeposit = (paymentId, email) => apiClient.post(`/public/deposits/${paymentId}/confirm`, { email });

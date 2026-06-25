@@ -109,8 +109,8 @@ function ProfessionalStep({ professionals, selectedProfessional, onSelect, onBac
               onClick={() => onSelect(p)}
               className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
                 selectedProfessional?.id === p.id
-                  ? 'border-blue-500 bg-blue-600 text-white'
-                  : 'border-gray-200 text-gray-800 hover:border-blue-300 hover:bg-blue-50'
+                  ? 'border-brick bg-brick text-white'
+                  : 'border-gray-200 text-gray-800 hover:border-brass hover:bg-paper'
               }`}
             >
               <span>{p.name}</span>
@@ -202,9 +202,9 @@ function CalendarStep({ workingDays, selectedDate, onSelect, onBack }) {
                 'flex aspect-square items-center justify-center rounded-xl text-sm font-medium transition-colors',
                 disabled
                   ? 'cursor-not-allowed text-gray-300'
-                  : 'cursor-pointer text-gray-800 hover:bg-blue-50',
-                isSelected && '!bg-blue-600 !text-white',
-                isToday && !disabled && !isSelected && 'ring-2 ring-blue-300 ring-offset-1',
+                  : 'cursor-pointer text-gray-800 hover:bg-paper',
+                isSelected && '!bg-brick !text-white',
+                isToday && !disabled && !isSelected && 'ring-2 ring-brass ring-offset-1',
               ].filter(Boolean).join(' ')}
             >
               {day.getDate()}
@@ -241,8 +241,8 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
               onClick={() => onSelect(slot)}
               className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
                 selectedSlot === slot
-                  ? 'border-blue-500 bg-blue-600 text-white'
-                  : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                  ? 'border-brick bg-brick text-white'
+                  : 'border-gray-200 text-gray-700 hover:border-brass hover:bg-paper'
               }`}
             >
               {slot}
@@ -256,7 +256,7 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
       <button
         onClick={onNext}
         disabled={!selectedSlot || slotsLoading}
-        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-50"
       >
         Continuar →
       </button>
@@ -276,7 +276,7 @@ function FormStep({ name, email, phone, date, time, professionalName, onChange, 
       <p className="mb-4 text-sm text-gray-500">Completá tus datos para confirmar el turno.</p>
 
       {/* Summary */}
-      <div className="mb-6 rounded-xl bg-blue-50 px-4 py-3 text-sm">
+      <div className="mb-6 rounded-xl bg-cream px-4 py-3 text-sm">
         {professionalName && (
           <div className="flex justify-between py-0.5">
             <span className="text-gray-500">Peluquero</span>
@@ -303,7 +303,7 @@ function FormStep({ name, email, phone, date, time, professionalName, onChange, 
             placeholder="Juan García"
             required
             autoFocus
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <div>
@@ -314,7 +314,7 @@ function FormStep({ name, email, phone, date, time, professionalName, onChange, 
             onChange={(e) => onChange('email', e.target.value)}
             placeholder="juan@ejemplo.com"
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <div>
@@ -325,7 +325,7 @@ function FormStep({ name, email, phone, date, time, professionalName, onChange, 
             onChange={(e) => onChange('phone', e.target.value)}
             placeholder="+54 9 11 1234-5678"
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
           <p className="mt-1 text-xs text-gray-400">Te enviaremos la confirmación y el recordatorio por WhatsApp.</p>
         </div>
@@ -333,7 +333,7 @@ function FormStep({ name, email, phone, date, time, professionalName, onChange, 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="mt-2 w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
         >
           {loading ? 'Reservando...' : 'Confirmar reserva'}
         </button>
@@ -356,7 +356,7 @@ function CheckoutStep({ deposit, professionalName, date, time, onPay, onBack, pa
         Dejá una seña para asegurar tu turno. Se descuenta del total del servicio.
       </p>
 
-      <div className="mb-6 rounded-xl bg-blue-50 px-4 py-3 text-sm">
+      <div className="mb-6 rounded-xl bg-cream px-4 py-3 text-sm">
         {professionalName && (
           <div className="flex justify-between py-0.5">
             <span className="text-gray-500">Peluquero</span>
@@ -373,9 +373,9 @@ function CheckoutStep({ deposit, professionalName, date, time, onPay, onBack, pa
         </div>
       </div>
 
-      <div className="mb-6 rounded-xl border border-blue-100 bg-white px-5 py-4 text-center">
+      <div className="mb-6 rounded-xl border border-brass bg-white px-5 py-4 text-center">
         <p className="text-sm text-gray-500">Monto de la seña</p>
-        <p className="text-4xl font-black text-blue-600">${amount.toLocaleString('es-AR')}</p>
+        <p className="text-4xl font-black text-brick">${amount.toLocaleString('es-AR')}</p>
       </div>
 
       {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
@@ -383,7 +383,7 @@ function CheckoutStep({ deposit, professionalName, date, time, onPay, onBack, pa
       <button
         onClick={onPay}
         disabled={paying}
-        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+        className="w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
       >
         {paying ? 'Procesando...' : `Pagar seña $${amount.toLocaleString('es-AR')}`}
       </button>
@@ -405,7 +405,7 @@ function DoneStep({ turn, deposit, professionalName, onNew, onHome }) {
       <h2 className="text-2xl font-bold text-gray-800">¡Turno reservado!</h2>
       <p className="mt-2 text-sm text-gray-500">Guardá este número para el día de tu turno.</p>
 
-      <div className="my-6 rounded-xl bg-blue-600 px-6 py-5 text-white">
+      <div className="my-6 rounded-xl bg-brick px-6 py-5 text-white">
         <p className="text-sm font-medium opacity-80">Tu número de turno</p>
         <p className="text-6xl font-black">{String(turn.number).padStart(3, '0')}</p>
       </div>
@@ -440,7 +440,7 @@ function DoneStep({ turn, deposit, professionalName, onNew, onHome }) {
       <div className="mt-6 flex flex-col gap-2">
         <button
           onClick={onHome}
-          className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+          className="w-full rounded-xl bg-brick py-3 text-sm font-semibold text-white hover:bg-brick-dark"
         >
           Volver al inicio
         </button>
@@ -491,11 +491,11 @@ export default function ReservarPage() {
         scheduledTime: selectedSlot,
         professionalId: selectedProfessional?.id,
       });
-      const deposit = await createDeposit(newTurn.id);
+      const deposit = await createDeposit(newTurn.id, email.trim());
       dispatch({ type: 'TO_CHECKOUT', turn: newTurn, deposit });
     } catch (e) {
       if (newTurn) {
-        try { await cancelTurn(newTurn.id); } catch { /* cleanup best-effort */ }
+        try { await cancelTurn(newTurn.id, email.trim()); } catch { /* cleanup best-effort */ }
       }
       dispatch({ type: 'SET_ERROR', payload: e.message || 'Error al reservar. Intentá de nuevo.' });
     }
@@ -505,7 +505,7 @@ export default function ReservarPage() {
     dispatch({ type: 'SET_PAYING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: '' });
     try {
-      const paid = await confirmDeposit(deposit.id);
+      const paid = await confirmDeposit(deposit.id, email.trim());
       dispatch({ type: 'DONE', turn, deposit: paid });
     } catch (e) {
       dispatch({ type: 'SET_PAYING', payload: false });
@@ -514,7 +514,7 @@ export default function ReservarPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-cream to-paper p-6 pt-16">
       <div className="w-full max-w-lg">
         {step === STEPS.PROFESSIONAL && (
           loading ? (

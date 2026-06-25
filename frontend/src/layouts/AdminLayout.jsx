@@ -19,12 +19,12 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-paper">
       {/* Sidebar */}
       <aside className="flex w-56 flex-col bg-white shadow-sm">
         <div className="border-b border-gray-100 px-5 py-4">
           <span className="text-lg font-bold text-gray-800">Turnero</span>
-          <span className="ml-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700">
+          <span className="ml-1 rounded bg-brass/20 px-1.5 py-0.5 text-xs font-medium text-brick">
             Admin
           </span>
         </div>
@@ -37,7 +37,7 @@ export default function AdminLayout() {
               className={({ isActive }) =>
                 `mb-1 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-blue-50 text-blue-700'
+                    ? 'bg-cream text-brick'
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`
               }
