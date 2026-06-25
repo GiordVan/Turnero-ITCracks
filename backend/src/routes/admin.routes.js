@@ -76,4 +76,6 @@ router.get(
   adminController.getDailyTurns,
 );
 
+router.get('/notifications', adminController.getNotifications);
+
 module.exports = router;

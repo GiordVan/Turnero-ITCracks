@@ -57,6 +57,14 @@ const getDailyTurns = async (req, res, next) => {
   }
 };
 
+const getNotifications = async (req, res, next) => {
+  try {
+    res.json(await adminService.listNotifications());
+  } catch (e) {
+    next(e);
+  }
+};
+
 module.exports = {
   getConfig,
   updateConfig,
@@ -65,4 +73,5 @@ module.exports = {
   updateWorkBand,
   deleteWorkBand,
   getDailyTurns,
+  getNotifications,
 };

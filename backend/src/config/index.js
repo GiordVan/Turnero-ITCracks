@@ -10,6 +10,17 @@ const config = {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   },
+  payments: {
+    provider: (process.env.PAYMENT_PROVIDER || 'simulated').toLowerCase(),
+    depositAmount: Number(process.env.DEPOSIT_AMOUNT || 2500),
+    currency: process.env.DEPOSIT_CURRENCY || 'ARS',
+  },
+  whatsapp: {
+    mode: (process.env.WHATSAPP_MODE || 'simulated').toLowerCase(),
+    apiUrl: process.env.EVOLUTION_API_URL || '',
+    apiKey: process.env.EVOLUTION_API_KEY || '',
+    instance: process.env.EVOLUTION_INSTANCE || '',
+  },
 };
 
 const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];

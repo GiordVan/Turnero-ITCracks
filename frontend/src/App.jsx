@@ -8,6 +8,7 @@ import ReservarPage from './pages/ReservarPage';
 import MisTurnosPage from './pages/MisTurnosPage';
 import TurnosPage from './pages/admin/TurnosPage';
 import ConfigPage from './pages/admin/ConfigPage';
+import NotificacionesPage from './pages/admin/NotificacionesPage';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <Route path="/admin" element={<Navigate to="/admin/turnos" replace />} />
               <Route path="/admin/turnos" element={<TurnosPage />} />
               <Route path="/admin/config" element={<ConfigPage />} />
+              <Route path="/admin/notificaciones" element={<NotificacionesPage />} />
             </Route>
           </Route>
 

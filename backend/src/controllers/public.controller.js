@@ -1,4 +1,5 @@
 const publicService = require('../services/public.service');
+const depositService = require('../services/deposit.service');
 
 const getPublicConfig = async (req, res, next) => {
   try {
@@ -36,4 +37,20 @@ const cancelTurn = async (req, res, next) => {
   } catch (e) { next(e); }
 };
 
-module.exports = { getPublicConfig, listProfessionals, getAvailableSlots, createTurn, getMyTurns, cancelTurn };
+const createDeposit = async (req, res, next) => {
+  try {
+    res.status(201).json(await depositService.createDeposit(req.params.id));
+  } catch (e) { next(e); }
+};
+
+const confirmDeposit = async (req, res, next) => {
+  try {
+    const payment = await depositService.confirmDeposit(req.params.id);
+    depositService
+      .notifyConfirmation(payment.turnId)
+      .catch((e) => console.error('[deposit] confirmacion WhatsApp no enviada:', e.message));
+    res.json(payment);
+  } catch (e) { next(e); }
+};
+
+module.exports = { getPublicConfig, listProfessionals, getAvailableSlots, createTurn, getMyTurns, cancelTurn, createDeposit, confirmDeposit };

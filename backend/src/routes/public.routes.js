@@ -21,6 +21,7 @@ router.post(
   [
     body('customerName').isString().trim().notEmpty(),
     body('email').isEmail().normalizeEmail(),
+    body('phone').optional().isString().trim(),
     body('scheduledDate').isDate(),
     body('scheduledTime').matches(/^\d{2}:\d{2}$/),
     body('professionalId').isString().notEmpty(),
@@ -41,6 +42,20 @@ router.patch(
   [param('id').isString().notEmpty()],
   validate,
   publicController.cancelTurn,
+);
+
+router.post(
+  '/turns/:id/deposit',
+  [param('id').isString().notEmpty()],
+  validate,
+  publicController.createDeposit,
+);
+
+router.post(
+  '/deposits/:id/confirm',
+  [param('id').isString().notEmpty()],
+  validate,
+  publicController.confirmDeposit,
 );
 
 module.exports = router;

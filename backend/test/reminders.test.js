@@ -5,7 +5,7 @@ const { isDue, selectDueTurns, runReminders } = reminders;
 
 const base = {
   id: 't1',
-  email: 'a@b.com',
+  phone: '+5491111111111',
   status: 'WAITING',
   scheduledDate: '2026-06-10',
   scheduledTime: '10:30',
@@ -23,8 +23,8 @@ describe('isDue', () => {
     expect(isDue({ ...base, reminderSentAt: new Date() }, now, 24)).toBe(false);
   });
 
-  it('NO recuerda si no hay email', () => {
-    expect(isDue({ ...base, email: null }, now, 24)).toBe(false);
+  it('NO recuerda si no hay phone', () => {
+    expect(isDue({ ...base, phone: null }, now, 24)).toBe(false);
   });
 
   it('NO recuerda turnos fuera de la ventana', () => {
@@ -41,7 +41,7 @@ describe('selectDueTurns', () => {
     const turns = [
       base,
       { ...base, id: 't2', reminderSentAt: new Date() },
-      { ...base, id: 't3', email: null },
+      { ...base, id: 't3', phone: null },
     ];
     const due = selectDueTurns(turns, now, 24);
     expect(due.map((t) => t.id)).toEqual(['t1']);
@@ -56,12 +56,12 @@ describe('runReminders', () => {
         update: vi.fn().mockResolvedValue({}),
       },
     };
-    const sendEmail = vi.fn().mockResolvedValue();
+    const send = vi.fn().mockResolvedValue();
 
-    const sent = await runReminders({ now, windowHours: 24, sendEmail, db });
+    const sent = await runReminders({ now, windowHours: 24, send, db });
 
     expect(sent).toBe(1);
-    expect(sendEmail).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledTimes(1);
     expect(db.turn.update).toHaveBeenCalledWith({
       where: { id: 't1' },
       data: { reminderSentAt: expect.any(Date) },
@@ -75,9 +75,9 @@ describe('runReminders', () => {
         update: vi.fn().mockResolvedValue({}),
       },
     };
-    const sendEmail = vi.fn().mockRejectedValue(new Error('resend caído'));
+    const send = vi.fn().mockRejectedValue(new Error('resend caído'));
 
-    const sent = await runReminders({ now, windowHours: 24, sendEmail, db });
+    const sent = await runReminders({ now, windowHours: 24, send, db });
 
     expect(sent).toBe(0);
     expect(db.turn.update).not.toHaveBeenCalled();

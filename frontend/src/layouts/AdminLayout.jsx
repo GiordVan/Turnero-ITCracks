@@ -4,6 +4,7 @@ import NotificationBell from '../components/NotificationBell';
 
 const navItems = [
   { to: '/admin/turnos', label: 'Turnos del día', icon: '📋' },
+  { to: '/admin/notificaciones', label: 'Mensajes', icon: '💬' },
   { to: '/admin/config', label: 'Configuración', icon: '⚙️' },
 ];
 

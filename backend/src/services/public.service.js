@@ -51,7 +51,7 @@ const getAvailableSlots = async (dateStr, professionalId, db = prisma) => {
 };
 
 // ── Create turn (CON profesional) ───────────────────────────────────────────────
-const createTurn = async ({ customerName, email, scheduledDate, scheduledTime, professionalId }, db = prisma) => {
+const createTurn = async ({ customerName, email, phone, scheduledDate, scheduledTime, professionalId }, db = prisma) => {
   // El peluquero debe existir y estar activo
   const professional = await db.professional.findUnique({ where: { id: professionalId } });
   if (!professional || !professional.isActive) {
@@ -81,6 +81,7 @@ const createTurn = async ({ customerName, email, scheduledDate, scheduledTime, p
       number: (lastTurn?.number ?? 0) + 1,
       customerName,
       email,
+      phone,
       scheduledDate,
       scheduledTime,
       professionalId,

@@ -8,3 +8,5 @@ export const createTurn = (data) => apiClient.post('/public/turns', data);
 export const getMyTurns = (email) =>
   apiClient.get('/public/my-turns', { params: { email } });
 export const cancelTurn = (id) => apiClient.patch(`/public/turns/${id}/cancel`);
+export const createDeposit = (turnId) => apiClient.post(`/public/turns/${turnId}/deposit`);
+export const confirmDeposit = (paymentId) => apiClient.post(`/public/deposits/${paymentId}/confirm`);

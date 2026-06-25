@@ -13,3 +13,6 @@ export const deleteWorkBand = (id) => apiClient.delete(`/admin/work-bands/${id}`
 // Turns
 export const getDailyTurns = (date) =>
   apiClient.get('/admin/turns', { params: { date } });
+
+// Notifications
+export const getNotifications = () => apiClient.get('/admin/notifications');

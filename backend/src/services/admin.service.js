@@ -97,6 +97,14 @@ async function findWorkBandOrFail(id) {
   return band;
 }
 
+const listNotifications = async (limit = 50) => {
+  return prisma.notificationLog.findMany({
+    orderBy: { sentAt: 'desc' },
+    take: limit,
+    include: { turn: { select: { customerName: true, scheduledDate: true, scheduledTime: true } } },
+  });
+};
+
 module.exports = {
   getConfig,
   updateConfig,
@@ -105,4 +113,5 @@ module.exports = {
   updateWorkBand,
   deleteWorkBand,
   getDailyTurns,
+  listNotifications,
 };
