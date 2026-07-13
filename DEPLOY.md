@@ -70,10 +70,11 @@ Admin: `admin@turnero.com` / `admin1234` (cambiá la clave después de la demo).
 ## Notas / posibles ajustes
 - Los nombres exactos de algunos flags del CLI pueden variar por versión; usá
   `railway <comando> --help` si alguno no matchea.
-- **Si el SPA carga en blanco por CSP** (Helmet bloquea algún asset): en `backend/src/app.js`
-  cambiá `app.use(helmet())` por `app.use(helmet({ contentSecurityPolicy: false }))`.
-  (Con el build de Vite, que sirve JS/CSS same-origin, normalmente no hace falta.)
-- El build usa `npm install` (no `npm ci`) porque el package-lock puede estar desfasado
-  hasta que corras `npm install` local y lo commitees. Para builds 100% reproducibles,
-  regenerá los locks y volvé a `npm ci`.
+- **CSP:** `backend/src/app.js` ya define una CSP explícita de Helmet (permite las
+  fuentes de Google y estilos inline; el resto queda en `'self'`). No hace falta
+  apagarla. Si agregás assets de otros orígenes, ampliá las directivas ahí.
+- El build usa `npm ci` (instalación reproducible desde los lockfiles). Requiere
+  que `package-lock.json` esté completo y en sync con `package.json` (lo está).
+  En producción, `NODE_ENV=production` exige además `JWT_SECRET` >= 32 caracteres
+  y `CORS_ORIGIN` definido (si no, el arranque falla con un mensaje claro).
 - Recordatorio: sin `RESEND_API_KEY` el cron corre igual pero no manda mails (los saltea).
