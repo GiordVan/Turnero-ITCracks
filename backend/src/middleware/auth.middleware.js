@@ -28,12 +28,23 @@ const authorize = (...roles) => {
   };
 };
 
-// Used by SSE routes where EventSource cannot set custom headers
-const authenticateQuery = (req, res, next) => {
+// Firma un token EFÍMERO y DEDICADO para abrir el stream SSE. Corta duración y
+// purpose='sse'. Así el JWT principal (7 días) nunca viaja por query string.
+const signSseToken = (user) =>
+  jwt.sign({ id: user.id, role: user.role, purpose: 'sse' }, config.jwt.secret, {
+    expiresIn: config.sse.tokenTtl,
+  });
+
+// Auth del stream SSE por query param (EventSource no manda headers). Exige que
+// el token sea el EFÍMERO (purpose='sse'): el JWT principal se rechaza acá.
+const authenticateSse = (req, res, next) => {
   const token = req.query.token;
   if (!token) return res.status(401).json({ message: 'No token provided' });
   try {
     const payload = jwt.verify(token, config.jwt.secret);
+    if (payload.purpose !== 'sse') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
     req.user = payload;
     next();
   } catch {
@@ -41,4 +52,4 @@ const authenticateQuery = (req, res, next) => {
   }
 };
 
-module.exports = { authenticate, authenticateQuery, authorize };
+module.exports = { authenticate, authenticateSse, signSseToken, authorize };

@@ -42,6 +42,11 @@ const config = {
     // (exponía datos sin verificación). Se re-habilita con OTP en F1.
     publicMyTurns: process.env.PUBLIC_MY_TURNS_ENABLED === 'true',
   },
+  sse: {
+    // TTL del token efímero de SSE (dedicado, single-purpose). Corto: sólo se usa
+    // para abrir el stream; el JWT principal nunca viaja por query string.
+    tokenTtl: process.env.SSE_TOKEN_TTL || '60s',
+  },
 };
 
 // Validación de entorno. Se ejecuta EXPLÍCITAMENTE al arrancar el servidor

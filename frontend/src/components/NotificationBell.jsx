@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { getSseToken } from '../api/admin';
 
 function BellIcon() {
   return (
@@ -33,20 +34,32 @@ export default function NotificationBell() {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!localStorage.getItem('token')) return;
 
-    const es = new EventSource(`/api/admin/notifications/stream?token=${token}`);
+    let es;
+    let cancelled = false;
 
-    es.onmessage = (e) => {
-      const turn = JSON.parse(e.data);
-      setNotifications((prev) => [{ ...turn, _receivedAt: new Date().toISOString() }, ...prev].slice(0, 30));
-      setUnread((prev) => prev + 1);
+    // Pedimos un token EFÍMERO (con el JWT principal en el header) y recién con
+    // él abrimos el stream. Así el JWT principal nunca va en la URL del SSE.
+    getSseToken()
+      .then(({ token: sseToken }) => {
+        if (cancelled) return;
+        es = new EventSource(`/api/admin/notifications/stream?token=${sseToken}`);
+        es.onmessage = (e) => {
+          const turn = JSON.parse(e.data);
+          setNotifications((prev) =>
+            [{ ...turn, _receivedAt: new Date().toISOString() }, ...prev].slice(0, 30),
+          );
+          setUnread((prev) => prev + 1);
+        };
+        es.onerror = () => es.close();
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (es) es.close();
     };
-
-    es.onerror = () => es.close();
-
-    return () => es.close();
   }, []);
 
   // Close dropdown when clicking outside

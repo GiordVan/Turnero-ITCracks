@@ -7,6 +7,10 @@ const config = require('./config');
 const routes = require('./routes');
 const reminders = require('./services/reminders');
 const { errorHandler, notFound } = require('./middleware/error.middleware');
+const { redactSensitiveQuery } = require('./lib/logRedact');
+
+// Redacta tokens/params sensibles del query string en los logs de acceso.
+morgan.token('url', (req) => redactSensitiveQuery(req.originalUrl || req.url));
 
 const app = express();
 
