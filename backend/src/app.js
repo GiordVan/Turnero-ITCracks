@@ -10,7 +10,25 @@ const { errorHandler, notFound } = require('./middleware/error.middleware');
 
 const app = express();
 
-app.use(helmet());
+// Nº de proxies de confianza (Railway = 1). Necesario para que req.ip (y el
+// rate limiting) usen la IP real de X-Forwarded-For sin ser spoofeable.
+app.set('trust proxy', config.trustProxy);
+
+// CSP explícita: mantenemos la protección de helmet (no la apagamos) permitiendo
+// sólo lo que el SPA necesita. style-src 'unsafe-inline' es necesario para los
+// estilos inline de React/Recharts; las fuentes se sirven desde Google Fonts.
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        'font-src': ["'self'", 'https://fonts.gstatic.com'],
+        'img-src': ["'self'", 'data:'],
+      },
+    },
+  }),
+);
 app.use(cors({ origin: config.cors.origin, credentials: true }));
 app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
 app.use(express.json());

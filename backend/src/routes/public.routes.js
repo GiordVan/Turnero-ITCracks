@@ -2,8 +2,12 @@ const { Router } = require('express');
 const { body, query, param } = require('express-validator');
 const publicController = require('../controllers/public.controller');
 const validate = require('../middleware/validate.middleware');
+const { publicLimiter } = require('../middleware/rateLimit.middleware');
 
 const router = Router();
+
+// Rate limiting moderado para todo el router público (abuso/enumeración/spam).
+router.use(publicLimiter);
 
 router.get('/config', publicController.getPublicConfig);
 

@@ -10,6 +10,19 @@ const config = {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   },
+  // Nº de proxies de confianza (Railway pone 1). Necesario para que
+  // express-rate-limit lea la IP real desde X-Forwarded-For sin ser spoofeable.
+  trustProxy: process.env.TRUST_PROXY !== undefined ? Number(process.env.TRUST_PROXY) : 1,
+  rateLimit: {
+    login: {
+      windowMs: Number(process.env.RATE_LIMIT_LOGIN_WINDOW_MS || 15 * 60 * 1000),
+      max: Number(process.env.RATE_LIMIT_LOGIN_MAX || 5),
+    },
+    public: {
+      windowMs: Number(process.env.RATE_LIMIT_PUBLIC_WINDOW_MS || 60 * 1000),
+      max: Number(process.env.RATE_LIMIT_PUBLIC_MAX || 30),
+    },
+  },
   payments: {
     provider: (process.env.PAYMENT_PROVIDER || 'simulated').toLowerCase(),
     depositAmount: Number(process.env.DEPOSIT_AMOUNT || 2500),
@@ -34,6 +47,18 @@ function validateConfig() {
   const missing = requiredEnvVars.filter((key) => !process.env[key]);
   if (missing.length > 0) {
     throw new Error(`Missing required environment variable(s): ${missing.join(', ')}`);
+  }
+
+  // Endurecimiento adicional en producción. Lee NODE_ENV en vivo (testeable).
+  if ((process.env.NODE_ENV || 'development') === 'production') {
+    if ((process.env.JWT_SECRET || '').length < 32) {
+      throw new Error('JWT_SECRET débil: en producción debe tener al menos 32 caracteres.');
+    }
+    if (!process.env.CORS_ORIGIN) {
+      throw new Error(
+        'CORS_ORIGIN es obligatorio en producción (definí el origen permitido del frontend).',
+      );
+    }
   }
 }
 

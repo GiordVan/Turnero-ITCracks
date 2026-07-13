@@ -9,3 +9,5 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret-not-real-please-override-in-ci';
 process.env.DATABASE_URL =
   process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/turnero_test?schema=public';
+// En tests no hay proxy delante: trust proxy = 0 (evita warnings de rate-limit).
+process.env.TRUST_PROXY = process.env.TRUST_PROXY || '0';
