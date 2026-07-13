@@ -37,6 +37,11 @@ const config = {
   analytics: {
     launchDate: process.env.ANALYTICS_LAUNCH_DATE || '2026-05-01',
   },
+  features: {
+    // Consulta pública de turnos por email. Deshabilitada por defecto en F0
+    // (exponía datos sin verificación). Se re-habilita con OTP en F1.
+    publicMyTurns: process.env.PUBLIC_MY_TURNS_ENABLED === 'true',
+  },
 };
 
 // Validación de entorno. Se ejecuta EXPLÍCITAMENTE al arrancar el servidor

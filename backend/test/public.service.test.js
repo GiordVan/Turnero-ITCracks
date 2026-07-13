@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import publicService from '../src/services/public.service.js';
+import manageToken from '../src/lib/manageToken.js';
 
-const { getAvailableSlots, createTurn } = publicService;
+const { getAvailableSlots, createTurn, cancelTurn } = publicService;
 
 // db falso: controla lo que devuelve Prisma sin necesitar una base real.
 // $transaction ejecuta el callback con el mismo db falso como "tx".
@@ -111,5 +112,40 @@ describe('createTurn (agendas independientes por peluquero)', () => {
         db,
       ),
     ).rejects.toMatchObject({ statusCode: 422 });
+  });
+});
+
+describe('cancelTurn (autorización por token de gestión)', () => {
+  function cancelDb(turn) {
+    return {
+      turn: {
+        findUnique: vi.fn().mockResolvedValue(turn),
+        update: vi.fn().mockImplementation(({ where, data }) => Promise.resolve({ id: where.id, ...data })),
+      },
+    };
+  }
+
+  it('con token válido y estado cancelable → cancela', async () => {
+    const db = cancelDb({ id: 'T1', status: 'WAITING' });
+    const token = manageToken.sign('T1');
+    const res = await cancelTurn('T1', token, db);
+    expect(res.status).toBe('CANCELLED');
+    expect(db.turn.update).toHaveBeenCalled();
+  });
+
+  it('con token inválido → 403 (no alcanza conocer el id)', async () => {
+    const db = cancelDb({ id: 'T1', status: 'WAITING' });
+    await expect(cancelTurn('T1', manageToken.sign('OTRO'), db)).rejects.toMatchObject({ statusCode: 403 });
+    expect(db.turn.update).not.toHaveBeenCalled();
+  });
+
+  it('turno inexistente → 404', async () => {
+    const db = cancelDb(null);
+    await expect(cancelTurn('T1', manageToken.sign('T1'), db)).rejects.toMatchObject({ statusCode: 404 });
+  });
+
+  it('estado no cancelable → 409', async () => {
+    const db = cancelDb({ id: 'T1', status: 'COMPLETED' });
+    await expect(cancelTurn('T1', manageToken.sign('T1'), db)).rejects.toMatchObject({ statusCode: 409 });
   });
 });

@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const notificationEmitter = require('./notifications');
+const manageToken = require('../lib/manageToken');
 
 // ── Public config (working days) ──────────────────────────────────────────────
 const getPublicConfig = async () => {
@@ -121,14 +122,16 @@ const getMyTurns = async (email) => {
 };
 
 // ── Cancel turn ───────────────────────────────────────────────────────────────
-const cancelTurn = async (id, email) => {
-  const turn = await prisma.turn.findUnique({ where: { id } });
+// Requiere el token de gestión (F0): firmado, vinculado al turnId y no vencido.
+// Reemplaza la vieja "autorización por email en el body".
+const cancelTurn = async (id, token, db = prisma) => {
+  const turn = await db.turn.findUnique({ where: { id } });
   if (!turn) {
     const err = new Error('Turno no encontrado');
     err.statusCode = 404;
     throw err;
   }
-  if (email && turn.email && turn.email.toLowerCase() !== email.toLowerCase()) {
+  if (!manageToken.verify(token, id)) {
     const err = new Error('No estás autorizado a cancelar este turno.');
     err.statusCode = 403;
     throw err;
@@ -138,7 +141,7 @@ const cancelTurn = async (id, email) => {
     err.statusCode = 409;
     throw err;
   }
-  return prisma.turn.update({ where: { id }, data: { status: 'CANCELLED' } });
+  return db.turn.update({ where: { id }, data: { status: 'CANCELLED' } });
 };
 
 // ── Admin: daily turns (por scheduledDate) ────────────────────────────────────

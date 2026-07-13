@@ -1,17 +1,19 @@
 const prisma = require('../lib/prisma');
 const config = require('../config');
+const manageToken = require('../lib/manageToken');
 const { getPaymentProvider } = require('../lib/payments');
 const { sendNotification } = require('../lib/notifications');
 
-// Crea (o devuelve) la sena PENDING para un turno.
-const createDeposit = async (turnId, email, db = prisma) => {
+// Crea (o devuelve) la sena PENDING para un turno. Requiere el token de gestión
+// del turno (F0): reemplaza la vieja autorización por email.
+const createDeposit = async (turnId, token, db = prisma) => {
   const turn = await db.turn.findUnique({ where: { id: turnId } });
   if (!turn) {
     const err = new Error('Turno no encontrado');
     err.statusCode = 404;
     throw err;
   }
-  if (email && turn.email && turn.email.toLowerCase() !== email.toLowerCase()) {
+  if (!manageToken.verify(token, turnId)) {
     const err = new Error('No autorizado para este turno.');
     err.statusCode = 403;
     throw err;
@@ -40,21 +42,19 @@ const createDeposit = async (turnId, email, db = prisma) => {
   return payment;
 };
 
-// Confirma el pago de la sena (simulado: siempre exitoso).
-const confirmDeposit = async (paymentId, email, db = prisma) => {
+// Confirma el pago de la sena (simulado: siempre exitoso). Requiere el token de
+// gestión del turno asociado al pago.
+const confirmDeposit = async (paymentId, token, db = prisma) => {
   const payment = await db.payment.findUnique({ where: { id: paymentId } });
   if (!payment) {
     const err = new Error('Pago no encontrado');
     err.statusCode = 404;
     throw err;
   }
-  if (email) {
-    const turn = await db.turn.findUnique({ where: { id: payment.turnId } });
-    if (turn && turn.email && turn.email.toLowerCase() !== email.toLowerCase()) {
-      const err = new Error('No autorizado para este pago.');
-      err.statusCode = 403;
-      throw err;
-    }
+  if (!manageToken.verify(token, payment.turnId)) {
+    const err = new Error('No autorizado para este pago.');
+    err.statusCode = 403;
+    throw err;
   }
   if (payment.status === 'PAID') return payment;
 

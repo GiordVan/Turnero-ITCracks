@@ -7,6 +7,8 @@ export const getAvailableSlots = (date, professionalId) =>
 export const createTurn = (data) => apiClient.post('/public/turns', data);
 export const getMyTurns = (email) =>
   apiClient.get('/public/my-turns', { params: { email } });
-export const cancelTurn = (id, email) => apiClient.patch(`/public/turns/${id}/cancel`, { email });
-export const createDeposit = (turnId, email) => apiClient.post(`/public/turns/${turnId}/deposit`, { email });
-export const confirmDeposit = (paymentId, email) => apiClient.post(`/public/deposits/${paymentId}/confirm`, { email });
+// El token de gestión (devuelto al crear el turno) reemplaza al email como
+// autorización para cancelar/pagar.
+export const cancelTurn = (id, token) => apiClient.patch(`/public/turns/${id}/cancel`, { token });
+export const createDeposit = (turnId, token) => apiClient.post(`/public/turns/${turnId}/deposit`, { token });
+export const confirmDeposit = (paymentId, token) => apiClient.post(`/public/deposits/${paymentId}/confirm`, { token });

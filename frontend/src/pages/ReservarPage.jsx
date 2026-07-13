@@ -491,11 +491,13 @@ export default function ReservarPage() {
         scheduledTime: selectedSlot,
         professionalId: selectedProfessional?.id,
       });
-      const deposit = await createDeposit(newTurn.id, email.trim());
+      // El backend devuelve un token de gestión ligado al turno; con él se paga
+      // la seña o se cancela (reemplaza la autorización por email).
+      const deposit = await createDeposit(newTurn.id, newTurn.manageToken);
       dispatch({ type: 'TO_CHECKOUT', turn: newTurn, deposit });
     } catch (e) {
       if (newTurn) {
-        try { await cancelTurn(newTurn.id, email.trim()); } catch { /* cleanup best-effort */ }
+        try { await cancelTurn(newTurn.id, newTurn.manageToken); } catch { /* cleanup best-effort */ }
       }
       dispatch({ type: 'SET_ERROR', payload: e.message || 'Error al reservar. Intentá de nuevo.' });
     }
@@ -505,7 +507,7 @@ export default function ReservarPage() {
     dispatch({ type: 'SET_PAYING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: '' });
     try {
-      const paid = await confirmDeposit(deposit.id, email.trim());
+      const paid = await confirmDeposit(deposit.id, turn.manageToken);
       dispatch({ type: 'DONE', turn, deposit: paid });
     } catch (e) {
       dispatch({ type: 'SET_PAYING', payload: false });

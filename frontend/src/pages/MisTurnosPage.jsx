@@ -58,8 +58,10 @@ export default function MisTurnosPage() {
     try {
       const data = await getMyTurns(email);
       setTurns(data);
-    } catch {
-      setError('No se pudo consultar. Verificá tu correo.');
+    } catch (err) {
+      // En F0 la consulta por email está deshabilitada (el backend responde 410
+      // con un mensaje claro). Se re-habilita con verificación (OTP) en F1.
+      setError(err?.message || 'No se pudo consultar. Verificá tu correo.');
     } finally {
       setLoading(false);
     }
@@ -77,8 +79,13 @@ export default function MisTurnosPage() {
 
         <div className="rounded-2xl bg-white p-8 shadow-md">
           <h2 className="mb-1 text-2xl font-bold text-gray-800">Mis turnos</h2>
-          <p className="mb-6 text-sm text-gray-500">
+          <p className="mb-4 text-sm text-gray-500">
             Ingresá tu correo para ver tus reservas.
+          </p>
+          <p className="mb-6 rounded-lg bg-cream px-3 py-2 text-xs text-wood">
+            Por seguridad, la consulta por correo está temporalmente deshabilitada.
+            Gestioná tu turno desde la confirmación de tu reserva; pronto vas a poder
+            consultarlos con un código de verificación.
           </p>
 
           <form onSubmit={handleSearch} className="flex gap-2">

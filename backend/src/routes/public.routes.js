@@ -43,21 +43,21 @@ router.get(
 
 router.patch(
   '/turns/:id/cancel',
-  [param('id').isString().notEmpty(), body('email').isEmail().normalizeEmail()],
+  [param('id').isString().notEmpty(), body('token').isString().notEmpty()],
   validate,
   publicController.cancelTurn,
 );
 
 router.post(
   '/turns/:id/deposit',
-  [param('id').isString().notEmpty(), body('email').isEmail().normalizeEmail()],
+  [param('id').isString().notEmpty(), body('token').isString().notEmpty()],
   validate,
   publicController.createDeposit,
 );
 
 router.post(
   '/deposits/:id/confirm',
-  [param('id').isString().notEmpty(), body('email').isEmail().normalizeEmail()],
+  [param('id').isString().notEmpty(), body('token').isString().notEmpty()],
   validate,
   publicController.confirmDeposit,
 );
