@@ -1,0 +1,15 @@
+# Normaliza los fines de línea a LF en el repo (commit) de forma determinística,
+# independientemente del core.autocrlf de cada máquina. Evita que un checkout en
+# Windows (autocrlf=true) introduzca CRLF que rompa el lint (prettier) en CI.
+* text=auto eol=lf
+
+# Binarios: no tocar.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+
+# SVG es texto.
+*.svg text eol=lf

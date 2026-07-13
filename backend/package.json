@@ -6,13 +6,24 @@
   "scripts": {
     "dev": "nodemon src/app.js",
     "start": "node src/app.js",
+    "start:prod": "prisma migrate deploy && node src/app.js",
     "db:migrate": "prisma migrate dev",
     "db:seed": "node prisma/seed.js",
+    "db:seed-demo": "node prisma/seed-demo.js",
+    "db:cleanup-demo": "node prisma/cleanup-demo.js",
+    "db:duplicates:report": "node prisma/scripts/report-duplicate-turns.js",
+    "db:duplicates:repair": "node prisma/scripts/repair-duplicate-turns.js",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
-    "lint": "eslint src --ext .js",
-    "lint:fix": "eslint src --ext .js --fix",
-    "format": "prettier --write \"src/**/*.js\""
+    "db:deploy": "prisma migrate deploy",
+    "pretest": "prisma generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "prisma generate && vitest run --config vitest.integration.config.mjs",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write \"src/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\""
   },
   "keywords": [],
   "author": "",
@@ -24,17 +35,24 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "node-cron": "^3.0.3",
+    "prisma": "6.19.3",
+    "resend": "^4.0.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.6.0",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.3",
-    "prisma": "6.19.3"
+    "supertest": "^7.2.2",
+    "vitest": "^2.1.8"
   }
 }

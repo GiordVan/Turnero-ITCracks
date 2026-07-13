@@ -4,9 +4,10 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
-  // Limpiar datos viejos
+  // Limpiar datos viejos (turnos primero: referencian professional via SET NULL)
   await prisma.turn.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.professional.deleteMany();
 
   // Admin user
   const hashedPassword = await bcrypt.hash('admin1234', 10);
@@ -34,7 +35,16 @@ async function main() {
     });
   }
 
+  // Peluqueros (padre e hijo) — caso ancla de la demo
+  await prisma.professional.createMany({
+    data: [
+      { name: 'Carlos (padre)', sortOrder: 0 },
+      { name: 'Nico (hijo)',    sortOrder: 1 },
+    ],
+  });
+
   console.log('Seed completado. Admin: admin@turnero.com / admin1234');
+  console.log('Peluqueros: Carlos (padre), Nico (hijo)');
 }
 
 main()

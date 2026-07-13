@@ -1,9 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 const config = require('../config');
-
-const prisma = new PrismaClient();
+const prisma = require('../lib/prisma');
 
 const login = async (email, password) => {
   const user = await prisma.user.findUnique({ where: { email } });

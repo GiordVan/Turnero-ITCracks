@@ -12,12 +12,45 @@ enum Role {
   EMPLOYEE
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+enum PaymentProvider {
+  SIMULATED
+  MERCADOPAGO
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationType {
+  CONFIRMATION
+  REMINDER
+}
+
+enum NotificationStatus {
+  SIMULATED
+  SENT
+  FAILED
+}
+
+enum ConfirmedVia {
+  REMINDER
+  MANUAL
+}
+
 enum TurnStatus {
   WAITING
   CALLED
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  NO_SHOW
 }
 
 model User {
@@ -42,6 +75,20 @@ model Service {
   turns       Turn[]
 }
 
+// Peluquero/profesional con el que se reserva. Padre e hijo = dos Professional.
+// La disponibilidad y el conflicto de turnos se calculan POR profesional, de
+// modo que el 10:30 con uno no bloquea el 10:30 con el otro.
+model Professional {
+  id        String           @id @default(cuid())
+  name      String
+  isActive  Boolean          @default(true)
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  turns     Turn[]
+  events    AnalyticsEvent[]
+}
+
 model AdminConfig {
   id           String   @id
   turnDuration Int      @default(30)
@@ -61,23 +108,96 @@ model WorkBand {
 }
 
 model Turn {
-  id            String     @id @default(cuid())
-  number        Int
-  status        TurnStatus @default(WAITING)
-  customerName  String?
-  email         String?
-  scheduledDate String?
-  scheduledTime String?
-  notes         String?
-  serviceId     String?
-  service       Service?   @relation(fields: [serviceId], references: [id])
-  calledAt      DateTime?
-  attendedAt    DateTime?
-  completedAt   DateTime?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id             String            @id @default(cuid())
+  number         Int
+  status         TurnStatus        @default(WAITING)
+  customerName   String?
+  email          String?
+  phone         String?
+  scheduledDate  String?
+  scheduledTime  String?
+  notes          String?
+  serviceId      String?
+  service        Service?          @relation(fields: [serviceId], references: [id])
+  professionalId String?
+  professional   Professional?     @relation(fields: [professionalId], references: [id])
+  reminderSentAt DateTime?
+  calledAt       DateTime?
+  attendedAt     DateTime?
+  completedAt    DateTime?
+  confirmedAt    DateTime?
+  confirmedVia   ConfirmedVia?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  payments       Payment[]
+  notifications  NotificationLog[]
+  events         AnalyticsEvent[]
 
   @@index([status])
   @@index([scheduledDate])
   @@index([email])
+  @@index([professionalId])
+  @@index([scheduledDate, professionalId])
+  // NOTA: además existe un índice ÚNICO PARCIAL "Turn_active_slot_unique" sobre
+  // (scheduledDate, scheduledTime, professionalId) WHERE status <> 'CANCELLED',
+  // que garantiza a nivel DB la no-doble-reserva. Prisma no puede expresar
+  // índices parciales, por eso se crea con SQL crudo en la migración
+  // 20260713120000_turn_active_slot_unique. No borrar ese índice en futuras
+  // migraciones (prisma migrate dev podría proponer eliminarlo: rechazar).
+}
+
+// Pago de seña. amount = monto en pesos ARS (entero). provider=SIMULATED en demo;
+// la interfaz queda lista para MERCADOPAGO real (externalRef guarda el id del proveedor).
+model Payment {
+  id          String          @id @default(cuid())
+  turnId      String
+  turn        Turn            @relation(fields: [turnId], references: [id])
+  amount      Int
+  currency    String          @default("ARS")
+  status      PaymentStatus   @default(PENDING)
+  provider    PaymentProvider @default(SIMULATED)
+  externalRef String?
+  paidAt      DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([turnId])
+  @@index([status])
+}
+
+// Registro de cada notificacion enviada (email o whatsapp). En modo simulado,
+// status=SIMULATED y body guarda el mensaje compuesto para mostrarlo en el panel demo.
+model NotificationLog {
+  id        String              @id @default(cuid())
+  turnId    String?
+  turn      Turn?               @relation(fields: [turnId], references: [id])
+  channel   NotificationChannel
+  type      NotificationType
+  status    NotificationStatus  @default(SIMULATED)
+  toAddress String?
+  body      String
+  sentAt    DateTime            @default(now())
+
+  @@index([turnId])
+  @@index([channel])
+  @@index([type])
+}
+
+// Evento del embudo de conversion. type es string libre:
+// 'page_view','slot_selected','deposit_paid','booked','reminder_sent',
+// 'reminder_confirmed','completed','no_show'. metadata = JSON opcional.
+model AnalyticsEvent {
+  id             String        @id @default(cuid())
+  type           String
+  turnId         String?
+  turn           Turn?         @relation(fields: [turnId], references: [id])
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  metadata       Json?
+  occurredAt     DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  @@index([type])
+  @@index([occurredAt])
+  @@index([professionalId])
 }

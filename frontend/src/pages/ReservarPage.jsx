@@ -1,21 +1,28 @@
 import { useEffect, useReducer, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPublicConfig, getAvailableSlots, createTurn } from '../api/public';
+import { getPublicConfig, getProfessionals, getAvailableSlots, createTurn, createDeposit, confirmDeposit, cancelTurn } from '../api/public';
 
 // ── State machine ─────────────────────────────────────────────────────────────
+// PROFESSIONAL → DATE → SLOT → FORM → CHECKOUT → DONE
+// La disponibilidad depende del peluquero elegido, por eso es el primer paso.
 
-const STEPS = { DATE: 'DATE', SLOT: 'SLOT', FORM: 'FORM', DONE: 'DONE' };
+const STEPS = { PROFESSIONAL: 'PROFESSIONAL', DATE: 'DATE', SLOT: 'SLOT', FORM: 'FORM', CHECKOUT: 'CHECKOUT', DONE: 'DONE' };
 
 const initial = {
-  step: STEPS.DATE,
+  step: STEPS.PROFESSIONAL,
   name: '',
   email: '',
+  phone: '',
   workingDays: [],
+  professionals: [],
+  selectedProfessional: null,
   selectedDate: null,
   availableSlots: [],
   slotsLoading: false,
   selectedSlot: null,
   turn: null,
+  deposit: null,
+  paying: false,
   loading: true,
   error: '',
 };
@@ -24,8 +31,12 @@ function reducer(state, action) {
   switch (action.type) {
     case 'SET_FIELD':
       return { ...state, [action.field]: action.value };
-    case 'SET_CONFIG':
-      return { ...state, workingDays: action.payload, loading: false };
+    case 'SET_INIT':
+      return { ...state, workingDays: action.payload.workingDays, professionals: action.payload.professionals, loading: false };
+    case 'SELECT_PROFESSIONAL':
+      return { ...state, selectedProfessional: action.payload, step: STEPS.DATE, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
+    case 'BACK_TO_PROFESSIONAL':
+      return { ...state, step: STEPS.PROFESSIONAL, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
     case 'SELECT_DATE':
       return { ...state, selectedDate: action.payload, availableSlots: [], selectedSlot: null, slotsLoading: true, error: '' };
     case 'SET_SLOTS':
@@ -39,11 +50,17 @@ function reducer(state, action) {
     case 'SET_ERROR':
       return { ...state, error: action.payload, loading: false, slotsLoading: false };
     case 'DONE':
-      return { ...state, turn: action.payload, step: STEPS.DONE, loading: false };
+      return { ...state, turn: action.turn, deposit: action.deposit, step: STEPS.DONE, loading: false, paying: false };
     case 'BACK_TO_DATE':
       return { ...state, step: STEPS.DATE, selectedDate: null, selectedSlot: null, availableSlots: [], error: '' };
     case 'BACK_TO_SLOT':
       return { ...state, step: STEPS.SLOT, error: '' };
+    case 'TO_CHECKOUT':
+      return { ...state, turn: action.turn, deposit: action.deposit, step: STEPS.CHECKOUT, loading: false, error: '' };
+    case 'SET_PAYING':
+      return { ...state, paying: action.payload };
+    case 'BACK_TO_FORM':
+      return { ...state, step: STEPS.FORM, error: '', paying: false };
     default:
       return state;
   }
@@ -69,6 +86,41 @@ function dateLabel(dateStr) {
     day: 'numeric',
     month: 'long',
   });
+}
+
+// ── Step: Professional ──────────────────────────────────────────────────────────
+
+function ProfessionalStep({ professionals, selectedProfessional, onSelect, onBack }) {
+  return (
+    <div className="rounded-2xl bg-white p-6 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver al inicio
+      </button>
+      <h2 className="mb-1 text-xl font-bold text-gray-800">¿Con quién querés atenderte?</h2>
+      <p className="mb-5 text-sm text-gray-500">Elegí el peluquero para ver sus horarios.</p>
+
+      {professionals.length === 0 ? (
+        <p className="py-6 text-center text-sm text-gray-400">No hay peluqueros disponibles por el momento.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {professionals.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p)}
+              className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                selectedProfessional?.id === p.id
+                  ? 'border-brick bg-brick text-white'
+                  : 'border-gray-200 text-gray-800 hover:border-brass hover:bg-paper'
+              }`}
+            >
+              <span>{p.name}</span>
+              <span aria-hidden>→</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Step: Calendar ────────────────────────────────────────────────────────────
@@ -150,9 +202,9 @@ function CalendarStep({ workingDays, selectedDate, onSelect, onBack }) {
                 'flex aspect-square items-center justify-center rounded-xl text-sm font-medium transition-colors',
                 disabled
                   ? 'cursor-not-allowed text-gray-300'
-                  : 'cursor-pointer text-gray-800 hover:bg-blue-50',
-                isSelected && '!bg-blue-600 !text-white',
-                isToday && !disabled && !isSelected && 'ring-2 ring-blue-300 ring-offset-1',
+                  : 'cursor-pointer text-gray-800 hover:bg-paper',
+                isSelected && '!bg-brick !text-white',
+                isToday && !disabled && !isSelected && 'ring-2 ring-brass ring-offset-1',
               ].filter(Boolean).join(' ')}
             >
               {day.getDate()}
@@ -189,8 +241,8 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
               onClick={() => onSelect(slot)}
               className={`rounded-xl border py-2.5 text-sm font-medium transition-colors ${
                 selectedSlot === slot
-                  ? 'border-blue-500 bg-blue-600 text-white'
-                  : 'border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                  ? 'border-brick bg-brick text-white'
+                  : 'border-gray-200 text-gray-700 hover:border-brass hover:bg-paper'
               }`}
             >
               {slot}
@@ -204,7 +256,7 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
       <button
         onClick={onNext}
         disabled={!selectedSlot || slotsLoading}
-        className="w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-50"
       >
         Continuar →
       </button>
@@ -214,7 +266,7 @@ function SlotStep({ date, slots, selectedSlot, onSelect, onNext, onBack, error, 
 
 // ── Step: Form ────────────────────────────────────────────────────────────────
 
-function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading, error }) {
+function FormStep({ name, email, phone, date, time, professionalName, onChange, onSubmit, onBack, loading, error }) {
   return (
     <div className="rounded-2xl bg-white p-8 shadow-md">
       <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
@@ -224,7 +276,13 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
       <p className="mb-4 text-sm text-gray-500">Completá tus datos para confirmar el turno.</p>
 
       {/* Summary */}
-      <div className="mb-6 rounded-xl bg-blue-50 px-4 py-3 text-sm">
+      <div className="mb-6 rounded-xl bg-cream px-4 py-3 text-sm">
+        {professionalName && (
+          <div className="flex justify-between py-0.5">
+            <span className="text-gray-500">Peluquero</span>
+            <span className="font-medium text-gray-800">{professionalName}</span>
+          </div>
+        )}
         <div className="flex justify-between py-0.5">
           <span className="text-gray-500">Fecha</span>
           <span className="font-medium capitalize text-gray-800">{dateLabel(date)}</span>
@@ -245,7 +303,7 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
             placeholder="Juan García"
             required
             autoFocus
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <div>
@@ -256,14 +314,26 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
             onChange={(e) => onChange('email', e.target.value)}
             placeholder="juan@ejemplo.com"
             required
-            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-gray-700">WhatsApp</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => onChange('phone', e.target.value)}
+            placeholder="+54 9 11 1234-5678"
+            required
+            className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
+          />
+          <p className="mt-1 text-xs text-gray-400">Te enviaremos la confirmación y el recordatorio por WhatsApp.</p>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 w-full rounded-xl bg-blue-600 py-3 text-base font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="mt-2 w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
         >
           {loading ? 'Reservando...' : 'Confirmar reserva'}
         </button>
@@ -272,9 +342,61 @@ function FormStep({ name, email, date, time, onChange, onSubmit, onBack, loading
   );
 }
 
+// ── Step: Checkout ────────────────────────────────────────────────────────────
+
+function CheckoutStep({ deposit, professionalName, date, time, onPay, onBack, paying, error }) {
+  const amount = deposit?.amount ?? 0;
+  return (
+    <div className="rounded-2xl bg-white p-8 shadow-md">
+      <button onClick={onBack} className="mb-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        ← Volver
+      </button>
+      <h2 className="mb-1 text-2xl font-bold text-gray-800">Seña para confirmar</h2>
+      <p className="mb-5 text-sm text-gray-500">
+        Dejá una seña para asegurar tu turno. Se descuenta del total del servicio.
+      </p>
+
+      <div className="mb-6 rounded-xl bg-cream px-4 py-3 text-sm">
+        {professionalName && (
+          <div className="flex justify-between py-0.5">
+            <span className="text-gray-500">Peluquero</span>
+            <span className="font-medium text-gray-800">{professionalName}</span>
+          </div>
+        )}
+        <div className="flex justify-between py-0.5">
+          <span className="text-gray-500">Fecha</span>
+          <span className="font-medium capitalize text-gray-800">{dateLabel(date)}</span>
+        </div>
+        <div className="flex justify-between py-0.5">
+          <span className="text-gray-500">Hora</span>
+          <span className="font-medium text-gray-800">{time}</span>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-brass bg-white px-5 py-4 text-center">
+        <p className="text-sm text-gray-500">Monto de la seña</p>
+        <p className="text-4xl font-black text-brick">${amount.toLocaleString('es-AR')}</p>
+      </div>
+
+      {error && <p className="mb-3 text-sm text-red-500">{error}</p>}
+
+      <button
+        onClick={onPay}
+        disabled={paying}
+        className="w-full rounded-xl bg-brick py-3 text-base font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
+      >
+        {paying ? 'Procesando...' : `Pagar seña $${amount.toLocaleString('es-AR')}`}
+      </button>
+      <p className="mt-3 text-center text-xs text-gray-400">
+        Modo demo · no se cobra dinero real
+      </p>
+    </div>
+  );
+}
+
 // ── Step: Done ────────────────────────────────────────────────────────────────
 
-function DoneStep({ turn, onNew, onHome }) {
+function DoneStep({ turn, deposit, professionalName, onNew, onHome }) {
   const label = dateLabel(turn.scheduledDate);
 
   return (
@@ -283,7 +405,7 @@ function DoneStep({ turn, onNew, onHome }) {
       <h2 className="text-2xl font-bold text-gray-800">¡Turno reservado!</h2>
       <p className="mt-2 text-sm text-gray-500">Guardá este número para el día de tu turno.</p>
 
-      <div className="my-6 rounded-xl bg-blue-600 px-6 py-5 text-white">
+      <div className="my-6 rounded-xl bg-brick px-6 py-5 text-white">
         <p className="text-sm font-medium opacity-80">Tu número de turno</p>
         <p className="text-6xl font-black">{String(turn.number).padStart(3, '0')}</p>
       </div>
@@ -293,6 +415,12 @@ function DoneStep({ turn, onNew, onHome }) {
           <span className="text-gray-500">Nombre</span>
           <span className="font-medium text-gray-800">{turn.customerName}</span>
         </div>
+        {professionalName && (
+          <div className="flex justify-between py-1.5">
+            <span className="text-gray-500">Peluquero</span>
+            <span className="font-medium text-gray-800">{professionalName}</span>
+          </div>
+        )}
         <div className="flex justify-between py-1.5">
           <span className="text-gray-500">Fecha</span>
           <span className="font-medium capitalize text-gray-800">{label}</span>
@@ -301,12 +429,18 @@ function DoneStep({ turn, onNew, onHome }) {
           <span className="text-gray-500">Hora</span>
           <span className="font-medium text-gray-800">{turn.scheduledTime}</span>
         </div>
+        {deposit?.status === 'PAID' ? (
+          <div className="flex justify-between py-1.5">
+            <span className="text-gray-500">Seña pagada</span>
+            <span className="font-medium text-green-600">✓ ${Number(deposit.amount).toLocaleString('es-AR')}</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-6 flex flex-col gap-2">
         <button
           onClick={onHome}
-          className="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+          className="w-full rounded-xl bg-brick py-3 text-sm font-semibold text-white hover:bg-brick-dark"
         >
           Volver al inicio
         </button>
@@ -326,43 +460,65 @@ function DoneStep({ turn, onNew, onHome }) {
 export default function ReservarPage() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(reducer, initial);
-  const { step, name, email, workingDays, selectedDate, availableSlots, selectedSlot, turn, loading, error, slotsLoading } = state;
+  const { step, name, email, phone, workingDays, professionals, selectedProfessional, selectedDate, availableSlots, selectedSlot, turn, deposit, paying, loading, error, slotsLoading } = state;
 
-  // Load working days config on mount
+  // Load config + professionals on mount
   useEffect(() => {
-    getPublicConfig()
-      .then((cfg) => dispatch({ type: 'SET_CONFIG', payload: cfg.workingDays }))
+    Promise.all([getPublicConfig(), getProfessionals()])
+      .then(([cfg, professionals]) =>
+        dispatch({ type: 'SET_INIT', payload: { workingDays: cfg.workingDays, professionals } }))
       .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudo cargar la configuración.' }));
   }, []);
 
-  // Load available slots whenever a date is selected
+  // Load available slots whenever a date is selected (por peluquero)
   useEffect(() => {
-    if (!selectedDate) return;
-    getAvailableSlots(selectedDate)
+    if (!selectedDate || !selectedProfessional) return;
+    getAvailableSlots(selectedDate, selectedProfessional.id)
       .then((slots) => dispatch({ type: 'SET_SLOTS', payload: slots }))
       .catch(() => dispatch({ type: 'SET_ERROR', payload: 'No se pudieron cargar los horarios.' }));
-  }, [selectedDate]);
+  }, [selectedDate, selectedProfessional]);
 
   const handleConfirm = async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: '' });
+    let newTurn = null;
     try {
-      const newTurn = await createTurn({
+      newTurn = await createTurn({
         customerName: name.trim(),
         email: email.trim(),
+        phone: phone.trim(),
         scheduledDate: selectedDate,
         scheduledTime: selectedSlot,
+        professionalId: selectedProfessional?.id,
       });
-      dispatch({ type: 'DONE', payload: newTurn });
+      // El backend devuelve un token de gestión ligado al turno; con él se paga
+      // la seña o se cancela (reemplaza la autorización por email).
+      const deposit = await createDeposit(newTurn.id, newTurn.manageToken);
+      dispatch({ type: 'TO_CHECKOUT', turn: newTurn, deposit });
     } catch (e) {
+      if (newTurn) {
+        try { await cancelTurn(newTurn.id, newTurn.manageToken); } catch { /* cleanup best-effort */ }
+      }
       dispatch({ type: 'SET_ERROR', payload: e.message || 'Error al reservar. Intentá de nuevo.' });
     }
   };
 
+  const handlePay = async () => {
+    dispatch({ type: 'SET_PAYING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: '' });
+    try {
+      const paid = await confirmDeposit(deposit.id, turn.manageToken);
+      dispatch({ type: 'DONE', turn, deposit: paid });
+    } catch (e) {
+      dispatch({ type: 'SET_PAYING', payload: false });
+      dispatch({ type: 'SET_ERROR', payload: e.message || 'No se pudo procesar la seña. Intentá de nuevo.' });
+    }
+  };
+
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-cream to-paper p-6 pt-16">
       <div className="w-full max-w-lg">
-        {step === STEPS.DATE && (
+        {step === STEPS.PROFESSIONAL && (
           loading ? (
             <div className="rounded-2xl bg-white p-8 text-center shadow-md">
               <p className="text-sm text-gray-400">Cargando...</p>
@@ -375,13 +531,22 @@ export default function ReservarPage() {
               </button>
             </div>
           ) : (
-            <CalendarStep
-              workingDays={workingDays}
-              selectedDate={selectedDate}
-              onSelect={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            <ProfessionalStep
+              professionals={professionals}
+              selectedProfessional={selectedProfessional}
+              onSelect={(p) => dispatch({ type: 'SELECT_PROFESSIONAL', payload: p })}
               onBack={() => navigate('/kiosko')}
             />
           )
+        )}
+
+        {step === STEPS.DATE && (
+          <CalendarStep
+            workingDays={workingDays}
+            selectedDate={selectedDate}
+            onSelect={(date) => dispatch({ type: 'SELECT_DATE', payload: date })}
+            onBack={() => dispatch({ type: 'BACK_TO_PROFESSIONAL' })}
+          />
         )}
 
         {step === STEPS.SLOT && (
@@ -401,8 +566,10 @@ export default function ReservarPage() {
           <FormStep
             name={name}
             email={email}
+            phone={phone}
             date={selectedDate}
             time={selectedSlot}
+            professionalName={selectedProfessional?.name}
             onChange={(field, value) => dispatch({ type: 'SET_FIELD', field, value })}
             onSubmit={handleConfirm}
             onBack={() => dispatch({ type: 'BACK_TO_SLOT' })}
@@ -411,9 +578,24 @@ export default function ReservarPage() {
           />
         )}
 
+        {step === STEPS.CHECKOUT && (
+          <CheckoutStep
+            deposit={deposit}
+            professionalName={selectedProfessional?.name}
+            date={selectedDate}
+            time={selectedSlot}
+            onPay={handlePay}
+            onBack={() => dispatch({ type: 'BACK_TO_FORM' })}
+            paying={paying}
+            error={error}
+          />
+        )}
+
         {step === STEPS.DONE && (
           <DoneStep
             turn={turn}
+            deposit={deposit}
+            professionalName={selectedProfessional?.name}
             onNew={() => navigate('/kiosko/reservar', { replace: true })}
             onHome={() => navigate('/kiosko')}
           />

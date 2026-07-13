@@ -11,9 +11,9 @@ const STATUS_LABEL = {
 };
 
 const STATUS_CLS = {
-  WAITING:     'bg-blue-100 text-blue-700',
+  WAITING:     'bg-brass/20 text-brick',
   CALLED:      'bg-yellow-100 text-yellow-700',
-  IN_PROGRESS: 'bg-indigo-100 text-indigo-700',
+  IN_PROGRESS: 'bg-brass/20 text-wood',
   COMPLETED:   'bg-green-100 text-green-700',
   CANCELLED:   'bg-red-100 text-red-700',
 };
@@ -40,7 +40,7 @@ export default function MisTurnosPage() {
     if (!window.confirm('¿Seguro que querés cancelar este turno?')) return;
     setCancelling(id);
     try {
-      await cancelTurn(id);
+      await cancelTurn(id, email);
       setTurns((prev) => prev.map((t) => t.id === id ? { ...t, status: 'CANCELLED' } : t));
     } catch {
       alert('No se pudo cancelar el turno. Intentá de nuevo.');
@@ -58,15 +58,17 @@ export default function MisTurnosPage() {
     try {
       const data = await getMyTurns(email);
       setTurns(data);
-    } catch {
-      setError('No se pudo consultar. Verificá tu correo.');
+    } catch (err) {
+      // En F0 la consulta por email está deshabilitada (el backend responde 410
+      // con un mensaje claro). Se re-habilita con verificación (OTP) en F1.
+      setError(err?.message || 'No se pudo consultar. Verificá tu correo.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-blue-50 to-indigo-100 p-6 pt-16">
+    <div className="flex min-h-screen flex-col items-center bg-gradient-to-br from-cream to-paper p-6 pt-16">
       <div className="w-full max-w-md">
         <button
           onClick={() => navigate('/kiosko')}
@@ -77,8 +79,13 @@ export default function MisTurnosPage() {
 
         <div className="rounded-2xl bg-white p-8 shadow-md">
           <h2 className="mb-1 text-2xl font-bold text-gray-800">Mis turnos</h2>
-          <p className="mb-6 text-sm text-gray-500">
+          <p className="mb-4 text-sm text-gray-500">
             Ingresá tu correo para ver tus reservas.
+          </p>
+          <p className="mb-6 rounded-lg bg-cream px-3 py-2 text-xs text-wood">
+            Por seguridad, la consulta por correo está temporalmente deshabilitada.
+            Gestioná tu turno desde la confirmación de tu reserva; pronto vas a poder
+            consultarlos con un código de verificación.
           </p>
 
           <form onSubmit={handleSearch} className="flex gap-2">
@@ -88,12 +95,12 @@ export default function MisTurnosPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="tu@correo.com"
               required
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
             />
             <button
               type="submit"
               disabled={loading}
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              className="rounded-xl bg-brick px-5 py-2.5 text-sm font-semibold text-white hover:bg-brick-dark disabled:opacity-60"
             >
               {loading ? '...' : 'Buscar'}
             </button>
@@ -111,7 +118,7 @@ export default function MisTurnosPage() {
                 <p className="mt-3 font-semibold text-gray-700">No posee turnos reservados</p>
                 <button
                   onClick={() => navigate('/kiosko/reservar')}
-                  className="mt-4 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="mt-4 rounded-xl bg-brick px-6 py-2.5 text-sm font-semibold text-white hover:bg-brick-dark"
                 >
                   Sacar un turno
                 </button>

@@ -13,3 +13,11 @@ export const deleteWorkBand = (id) => apiClient.delete(`/admin/work-bands/${id}`
 // Turns
 export const getDailyTurns = (date) =>
   apiClient.get('/admin/turns', { params: { date } });
+
+// Notifications
+export const getNotifications = () => apiClient.get('/admin/notifications');
+// Token efímero (dedicado) para abrir el stream SSE sin exponer el JWT principal.
+export const getSseToken = () => apiClient.post('/admin/sse-token');
+
+// Analytics
+export const getAnalytics = () => apiClient.get('/admin/analytics');

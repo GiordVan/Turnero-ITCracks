@@ -1,1 +1,32 @@
 @import "tailwindcss";
+
+/* ── Warm artisan / retro-barber theme ───────────────────────────────────────
+   Tokens Tailwind v4: generan utilidades bg-brick, text-brass, font-display… */
+@theme {
+  --color-paper: #f3e9d8;       /* fondo papel cálido */
+  --color-cream: #faf4e8;       /* superficie clara */
+  --color-ink: #2b2119;         /* texto espresso */
+  --color-brick: #a8392e;       /* rojo barbería (primario) */
+  --color-brick-dark: #8a2c23;  /* rojo hover */
+  --color-brass: #c1873b;       /* dorado vintage (acento) */
+  --color-wood: #6f4a2a;        /* madera */
+  --color-sage: #6f7a52;        /* complementario apagado */
+
+  --font-display: "Bebas Neue", system-ui, sans-serif;
+  --font-body: "Work Sans", system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  /* textura sutil de papel cálido */
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(193, 135, 59, 0.05), transparent 40%),
+    radial-gradient(circle at 80% 90%, rgba(168, 57, 46, 0.04), transparent 40%);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+}

@@ -79,7 +79,7 @@ function DurationSection() {
             onClick={() => handlePresetChange(preset)}
             className={`rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
               selectedValue === preset.value
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                ? 'border-brick bg-cream text-brick'
                 : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
             }`}
           >
@@ -97,7 +97,7 @@ function DurationSection() {
             value={customValue}
             onChange={(e) => setCustomValue(e.target.value)}
             placeholder="Ej: 45"
-            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
           <span className="text-sm text-gray-500">minutos</span>
         </div>
@@ -107,7 +107,7 @@ function DurationSection() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="rounded-lg bg-brick px-5 py-2 text-sm font-medium text-white hover:bg-brick-dark disabled:opacity-60"
         >
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
@@ -184,7 +184,7 @@ function WorkingDaysSection() {
             onClick={() => toggle(day.value)}
             className={`flex h-10 w-12 items-center justify-center rounded-lg border text-sm font-medium transition-colors ${
               selected.includes(day.value)
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                ? 'border-brick bg-cream text-brick'
                 : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
             }`}
           >
@@ -197,7 +197,7 @@ function WorkingDaysSection() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="rounded-lg bg-brick px-5 py-2 text-sm font-medium text-white hover:bg-brick-dark disabled:opacity-60"
         >
           {saving ? 'Guardando...' : 'Guardar'}
         </button>
@@ -303,7 +303,7 @@ function WorkBandsSection() {
             placeholder="Mañana"
             value={form.label}
             onChange={(e) => setForm((p) => ({ ...p, label: e.target.value }))}
-            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <div>
@@ -312,7 +312,7 @@ function WorkBandsSection() {
             type="time"
             value={form.startTime}
             onChange={(e) => setForm((p) => ({ ...p, startTime: e.target.value }))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <div>
@@ -321,13 +321,13 @@ function WorkBandsSection() {
             type="time"
             value={form.endTime}
             onChange={(e) => setForm((p) => ({ ...p, endTime: e.target.value }))}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-brick focus:ring-2 focus:ring-brass"
           />
         </div>
         <button
           type="submit"
           disabled={adding}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
+          className="rounded-lg bg-brick px-4 py-2 text-sm font-medium text-white hover:bg-brick-dark disabled:opacity-60"
         >
           {adding ? 'Agregando...' : 'Agregar'}
         </button>

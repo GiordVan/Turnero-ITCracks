@@ -1,7 +1,12 @@
 const { Router } = require('express');
 const { body, query } = require('express-validator');
 const adminController = require('../controllers/admin.controller');
-const { authenticate, authenticateQuery, authorize } = require('../middleware/auth.middleware');
+const {
+  authenticate,
+  authenticateSse,
+  signSseToken,
+  authorize,
+} = require('../middleware/auth.middleware');
 const validate = require('../middleware/validate.middleware');
 const notificationEmitter = require('../services/notifications');
 
@@ -9,7 +14,8 @@ const router = Router();
 
 // SSE — must be registered before the blanket middleware because EventSource
 // cannot send custom headers, so auth comes from ?token= query param instead.
-router.get('/notifications/stream', authenticateQuery, authorize('ADMIN'), (req, res) => {
+// El token es EFÍMERO y dedicado (purpose='sse'); nunca el JWT principal.
+router.get('/notifications/stream', authenticateSse, authorize('ADMIN'), (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -28,6 +34,12 @@ router.get('/notifications/stream', authenticateQuery, authorize('ADMIN'), (req,
 });
 
 router.use(authenticate, authorize('ADMIN'));
+
+// Emite un token efímero para abrir el stream SSE (auth por el JWT principal en
+// header). El frontend lo pide y recién con él abre el EventSource.
+router.post('/sse-token', (req, res) => {
+  res.json({ token: signSseToken(req.user) });
+});
 
 // Config
 router.get('/config', adminController.getConfig);
@@ -75,5 +87,10 @@ router.get(
   validate,
   adminController.getDailyTurns,
 );
+
+router.get('/notifications', adminController.getNotifications);
+
+// Analytics / dashboard de conversión
+router.get('/analytics', adminController.getAnalytics);
 
 module.exports = router;
