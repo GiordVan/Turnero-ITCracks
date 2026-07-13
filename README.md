@@ -33,11 +33,14 @@ recordatorio automático apunta a reducir los plantones (no-shows).
 ### Variables de entorno nuevas (ver backend/.env.example)
 `PAYMENT_PROVIDER`, `DEPOSIT_AMOUNT`, `DEPOSIT_CURRENCY`, `WHATSAPP_MODE`, `EVOLUTION_API_URL`, `EVOLUTION_API_KEY`, `EVOLUTION_INSTANCE`, `ANALYTICS_LAUNCH_DATE`.
 
-### Deuda de seguridad conocida (post-demo)
-- Rate limiting en endpoints públicos y en login (`express-rate-limit`).
-- `GET /public/my-turns` por email expone datos sin verificación (agregar código de un solo uso).
-- SSE admin pasa el JWT por query string (usar token efímero dedicado).
-- Validar entropía mínima de `JWT_SECRET` y exigir `CORS_ORIGIN` en producción.
+### Deuda de seguridad conocida — resuelta en F0 (estabilización)
+- ✅ Rate limiting en login y endpoints públicos (`express-rate-limit`).
+- ✅ Doble reserva imposible a nivel DB (índice único parcial + reserva atómica).
+- ✅ `GET /public/my-turns` por email deshabilitado; la gestión usa token firmado (OTP en F1).
+- ✅ SSE con token efímero dedicado (el JWT principal no viaja por query) + redacción de tokens en logs.
+- ✅ `JWT_SECRET` ≥ 32 y `CORS_ORIGIN` obligatorios en producción; CSP explícita; health con chequeo de DB.
+
+Pendiente (fases siguientes): OTP/tokens persistidos para clientes (F1), aislamiento multitenant (F2).
 
 ## Stack
 
@@ -102,10 +105,32 @@ npm run dev                   # http://localhost:5173 (proxea /api al backend)
 
 ## Tests
 
+**Unitarios** (rápidos, sin base de datos — funcionan out-of-the-box):
+
 ```bash
 cd backend
-npm test                      # Vitest: disponibilidad/reserva por profesional + recordatorio
+npm test                      # Vitest: disponibilidad, reserva, seña, token de gestión,
+                              # recordatorio, config, rate limit, redacción de logs...
 ```
+
+**Integración / API** (requieren una PostgreSQL de testing con las migraciones aplicadas):
+
+```bash
+# levantá una Postgres (p.ej. la de docker-compose) y apuntá DATABASE_URL a una base de testing
+docker compose -f docker-compose.dev.yml up -d
+export DATABASE_URL="postgresql://turnero:turnero@localhost:5432/turnero?schema=public"
+export JWT_SECRET="un-secreto-de-al-menos-32-caracteres-para-testing"
+cd backend
+npm run test:integration      # concurrencia (doble reserva), health, rate limit, gestión por token, SSE
+```
+
+CI (GitHub Actions, `.github/workflows/ci.yml`) corre lint + unit + migraciones + integración + build
+en cada push/PR. El lint es gate obligatorio; `npm run format:check` (Prettier) queda informativo hasta
+una normalización de formato dedicada (la baseline del código existente todavía no está completa).
+
+> Nota de seguridad (F0): la consulta pública de turnos por email está deshabilitada por defecto
+> (`PUBLIC_MY_TURNS_ENABLED=false`); la gestión de un turno usa un token firmado que se entrega al
+> reservar. En producción, `JWT_SECRET` debe tener ≥ 32 caracteres y `CORS_ORIGIN` es obligatorio.
 
 ## Deploy
 
