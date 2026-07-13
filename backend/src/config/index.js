@@ -26,11 +26,16 @@ const config = {
   },
 };
 
-const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
-for (const key of requiredEnvVars) {
-  if (!process.env[key]) {
-    throw new Error(`Missing required environment variable: ${key}`);
+// Validación de entorno. Se ejecuta EXPLÍCITAMENTE al arrancar el servidor
+// (ver src/app.js, bajo require.main), no al importar el módulo. Así los tests
+// pueden importar services/config sin necesitar variables de entorno reales.
+function validateConfig() {
+  const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET'];
+  const missing = requiredEnvVars.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variable(s): ${missing.join(', ')}`);
   }
 }
 
 module.exports = config;
+module.exports.validateConfig = validateConfig;

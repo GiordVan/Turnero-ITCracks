@@ -1,0 +1,27 @@
+# PostgreSQL local para desarrollo y para los tests de integración.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   # backend/.env → DATABASE_URL="postgresql://turnero:turnero@localhost:5432/turnero?schema=public"
+#
+# Para una base de testing aislada, crear otra base (p.ej. turnero_test) o usar
+# el mismo contenedor apuntando DATABASE_URL a ?schema=public de una DB dedicada.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: turnero-db
+    environment:
+      POSTGRES_USER: turnero
+      POSTGRES_PASSWORD: turnero
+      POSTGRES_DB: turnero
+    ports:
+      - '5432:5432'
+    volumes:
+      - turnero_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U turnero']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  turnero_pgdata:

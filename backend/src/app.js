@@ -34,9 +34,15 @@ if (config.nodeEnv === 'production') {
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(config.port, () => {
-  console.log(`Server running on port ${config.port} [${config.nodeEnv}]`);
-  reminders.start();
-});
+// Efectos de arranque sólo cuando este archivo es el punto de entrada
+// (`node src/app.js`). Al importar `app` desde un test, no se valida el entorno,
+// no se abre el puerto ni se arranca el cron de recordatorios.
+if (require.main === module) {
+  config.validateConfig();
+  app.listen(config.port, () => {
+    console.log(`Server running on port ${config.port} [${config.nodeEnv}]`);
+    reminders.start();
+  });
+}
 
 module.exports = app;
