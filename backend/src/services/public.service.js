@@ -60,38 +60,56 @@ const createTurn = async ({ customerName, email, phone, scheduledDate, scheduled
     throw err;
   }
 
-  // Verificar que el slot siga disponible PARA ESE profesional
+  // Chequeo aplicativo: da un 409 amigable en el caso común (slot ya tomado),
+  // sin depender de una carrera. NO es la garantía: dos requests concurrentes
+  // pueden pasar ambos este chequeo. La garantía real es el índice único parcial
+  // "Turn_active_slot_unique" a nivel DB (ver migración 20260713120000).
   const conflict = await db.turn.findFirst({
     where: { scheduledDate, scheduledTime, professionalId, status: { not: 'CANCELLED' } },
   });
   if (conflict) {
-    const err = new Error('Ese horario ya fue reservado con ese peluquero. Elegí otro.');
-    err.statusCode = 409;
-    throw err;
+    throw slotTakenError();
   }
 
-  // Número secuencial por día
-  const lastTurn = await db.turn.findFirst({
-    where: { scheduledDate },
-    orderBy: { number: 'desc' },
-  });
-
-  const turn = await db.turn.create({
-    data: {
-      number: (lastTurn?.number ?? 0) + 1,
-      customerName,
-      email,
-      phone,
-      scheduledDate,
-      scheduledTime,
-      professionalId,
-      status: 'WAITING',
-    },
-  });
+  // Número secuencial + creación dentro de una transacción. Si dos requests
+  // corren en paralelo, el índice único hace fallar el INSERT del segundo con
+  // P2002; lo traducimos al mismo 409 amigable en lugar de un 500.
+  let turn;
+  try {
+    turn = await db.$transaction(async (tx) => {
+      const lastTurn = await tx.turn.findFirst({
+        where: { scheduledDate },
+        orderBy: { number: 'desc' },
+      });
+      return tx.turn.create({
+        data: {
+          number: (lastTurn?.number ?? 0) + 1,
+          customerName,
+          email,
+          phone,
+          scheduledDate,
+          scheduledTime,
+          professionalId,
+          status: 'WAITING',
+        },
+      });
+    });
+  } catch (err) {
+    if (err.code === 'P2002') {
+      throw slotTakenError();
+    }
+    throw err;
+  }
 
   notificationEmitter.emit('new-turn', turn);
   return turn;
 };
+
+function slotTakenError() {
+  const err = new Error('Ese horario ya fue reservado con ese peluquero. Elegí otro.');
+  err.statusCode = 409;
+  return err;
+}
 
 // ── My turns ──────────────────────────────────────────────────────────────────
 const getMyTurns = async (email) => {

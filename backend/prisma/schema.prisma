@@ -138,6 +138,12 @@ model Turn {
   @@index([email])
   @@index([professionalId])
   @@index([scheduledDate, professionalId])
+  // NOTA: además existe un índice ÚNICO PARCIAL "Turn_active_slot_unique" sobre
+  // (scheduledDate, scheduledTime, professionalId) WHERE status <> 'CANCELLED',
+  // que garantiza a nivel DB la no-doble-reserva. Prisma no puede expresar
+  // índices parciales, por eso se crea con SQL crudo en la migración
+  // 20260713120000_turn_active_slot_unique. No borrar ese índice en futuras
+  // migraciones (prisma migrate dev podría proponer eliminarlo: rechazar).
 }
 
 // Pago de seña. amount = monto en pesos ARS (entero). provider=SIMULATED en demo;

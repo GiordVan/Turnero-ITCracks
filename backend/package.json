@@ -11,6 +11,8 @@
     "db:seed": "node prisma/seed.js",
     "db:seed-demo": "node prisma/seed-demo.js",
     "db:cleanup-demo": "node prisma/cleanup-demo.js",
+    "db:duplicates:report": "node prisma/scripts/report-duplicate-turns.js",
+    "db:duplicates:repair": "node prisma/scripts/repair-duplicate-turns.js",
     "db:studio": "prisma studio",
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",

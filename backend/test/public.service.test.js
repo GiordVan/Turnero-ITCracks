@@ -4,8 +4,9 @@ import publicService from '../src/services/public.service.js';
 const { getAvailableSlots, createTurn } = publicService;
 
 // db falso: controla lo que devuelve Prisma sin necesitar una base real.
+// $transaction ejecuta el callback con el mismo db falso como "tx".
 function makeDb(overrides = {}) {
-  return {
+  const db = {
     adminConfig: { findUnique: vi.fn().mockResolvedValue({ turnDuration: 30 }) },
     workBand: {
       findMany: vi.fn().mockResolvedValue([{ startTime: '10:00', endTime: '11:00' }]),
@@ -18,6 +19,8 @@ function makeDb(overrides = {}) {
     },
     ...overrides,
   };
+  db.$transaction = async (fn) => fn(db);
+  return db;
 }
 
 describe('getAvailableSlots (disponibilidad por profesional)', () => {
@@ -70,6 +73,24 @@ describe('createTurn (agendas independientes por peluquero)', () => {
       turn: {
         findFirst: vi.fn().mockResolvedValue({ id: 'existente' }),
         create: vi.fn(),
+      },
+    });
+
+    await expect(
+      createTurn(
+        { customerName: 'X', email: 'x@y.com', scheduledDate: '2026-06-10', scheduledTime: '10:30', professionalId: 'A' },
+        db,
+      ),
+    ).rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('carrera: el chequeo aplicativo no ve conflicto pero la DB rechaza (P2002) → 409', async () => {
+    // Simula dos requests concurrentes: findFirst no ve conflicto, pero el índice
+    // único parcial hace fallar el INSERT del segundo con P2002. Debe dar 409, no 500.
+    const db = makeDb({
+      turn: {
+        findFirst: vi.fn().mockResolvedValue(null), // sin conflicto aplicativo
+        create: vi.fn().mockRejectedValue(Object.assign(new Error('unique'), { code: 'P2002' })),
       },
     });
 
