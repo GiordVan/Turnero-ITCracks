@@ -41,6 +41,21 @@ describe('SSE con token efímero (el JWT principal no viaja por query)', () => {
       .query({ token: adminJwt });
     expect(res.status).toBe(401);
   });
+
+  it('el token efímero NO autentica otros endpoints (propósito exclusivo)', async () => {
+    const issued = await request(app)
+      .post('/api/admin/sse-token')
+      .set('Authorization', `Bearer ${adminJwt}`);
+    expect(issued.status).toBe(200);
+    const sseToken = issued.body.token;
+
+    // Usado como Bearer en la API general debe rechazarse: sólo sirve para
+    // abrir el stream SSE.
+    const cfg = await request(app)
+      .get('/api/admin/config')
+      .set('Authorization', `Bearer ${sseToken}`);
+    expect(cfg.status).toBe(401);
+  });
 });
 
 describe('redacción de logs (morgan)', () => {

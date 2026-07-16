@@ -12,6 +12,13 @@ const authenticate = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, config.jwt.secret);
+    // Los tokens de propósito dedicado (p.ej. purpose='sse') NO autentican la
+    // API general: cada propósito vale sólo para su propio endpoint. Sin este
+    // rechazo, el token efímero del SSE (que viaja por query string) serviría
+    // como Bearer en cualquier endpoint admin durante su ventana de vida.
+    if (payload.purpose) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
     req.user = payload;
     next();
   } catch {
